@@ -64,15 +64,15 @@ func TestOsmConnectionValidationOk(t *testing.T) {
 var kduNsActionValidationFailFixtures = []KduNsAction{
 	{},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KduNsAction",
 		Name:    "x",
-		Action:  NsAction.Create,
+		Action:  "Create",
 		VnfName: "x",
 	},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KDuNSAction",
 		Name:    "x",
-		Action:  NsAction.Create,
+		Action:  "cREate",
 		VnfName: "x",
 		Kdu: Kdu{
 			Model: "x",
@@ -80,7 +80,7 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 	},
 	{
 		Name:    "x",
-		Action:  NsAction.Create,
+		Action:  "create",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name:  "x",
@@ -90,7 +90,7 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 	{
 		Kind:    "ain't right",
 		Name:    "x",
-		Action:  NsAction.Create,
+		Action:  "creatE",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name:  "x",
@@ -98,8 +98,8 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 		},
 	},
 	{
-		Kind:    KduNsActionKind,
-		Action:  NsAction.Create,
+		Kind:    "kdunsaction",
+		Action:  "dElete",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name:  "x",
@@ -107,7 +107,7 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 		},
 	},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KduNsAction",
 		Name:    "x",
 		VnfName: "x",
 		Kdu: Kdu{
@@ -116,7 +116,7 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 		},
 	},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KduNsAction",
 		Name:    "x",
 		Action:  "ain't right",
 		VnfName: "x",
@@ -126,8 +126,8 @@ var kduNsActionValidationFailFixtures = []KduNsAction{
 		},
 	},
 	{
-		Kind:   KduNsActionKind,
-		Action: NsAction.Create,
+		Kind:   "KduNsAction",
+		Action: "upgRade",
 		Name:   "x",
 		Kdu: Kdu{
 			Name:  "x",
@@ -146,9 +146,9 @@ func TestKduNsActionValidationFail(t *testing.T) {
 
 var kduNsActionValidationOkFixtures = []KduNsAction{
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "kduNSaction",
 		Name:    "x",
-		Action:  NsAction.Create,
+		Action:  "Create",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name:  "x",
@@ -156,18 +156,18 @@ var kduNsActionValidationOkFixtures = []KduNsAction{
 		},
 	},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KduNsAction",
 		Name:    "x",
-		Action:  NsAction.Upgrade,
+		Action:  "Upgrade",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name: "x",
 		},
 	},
 	{
-		Kind:    KduNsActionKind,
+		Kind:    "KduNsAction",
 		Name:    "x",
-		Action:  NsAction.Delete,
+		Action:  "Delete",
 		VnfName: "x",
 		Kdu: Kdu{
 			Name: "x",

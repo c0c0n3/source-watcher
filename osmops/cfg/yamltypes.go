@@ -1,9 +1,6 @@
 package cfg
 
 import (
-	"fmt"
-	"strings"
-
 	v "github.com/go-ozzo/ozzo-validation"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
@@ -70,20 +67,22 @@ func (d OsmConnection) Validate() error {
 	)
 }
 
-const KduNsActionKind = "KduNsAction"
-
-var NsAction = struct {
-	Create  string
-	Upgrade string
-	Delete  string
+var KduNsActionKind = struct {
+	u.StrEnum
+	KIND u.EnumIx
 }{
-	Create:  "create",
-	Upgrade: "upgrade",
-	Delete:  "delete",
+	StrEnum: u.NewStrEnum("KduNsAction"),
+	KIND:    0,
 }
 
-func NsActions() []string {
-	return []string{NsAction.Create, NsAction.Upgrade, NsAction.Delete}
+var NsAction = struct {
+	u.StrEnum
+	CREATE, UPGRADE, DELETE u.EnumIx
+}{
+	StrEnum: u.NewStrEnum("create", "upgrade", "delete"),
+	CREATE:  0,
+	UPGRADE: 1,
+	DELETE:  2,
 }
 
 type Kdu struct {
@@ -111,36 +110,14 @@ type KduNsAction struct {
 // * Name, VnfName and Kdu.Name are not empty.
 // * Action is one of the NsAction constants---case doesn't matter.
 func (d KduNsAction) Validate() error {
-	validKind := func(value interface{}) error {
-		s, _ := value.(string)
-		if s != KduNsActionKind {
-			return fmt.Errorf("not %s", KduNsActionKind)
-		}
-		return nil
-	}
-	validAction := func(value interface{}) error {
-		s, _ := value.(string)
-		s = strings.ToLower(s)
-		for _, v := range NsActions() { // (*)
-			if v == s {
-				return nil
-			}
-		}
-		return fmt.Errorf("not an action: %s", s)
-
-		// (*) ideally it should rather be
-		//     return v.In(NsActions()...).Validate(s)
-		// but I couldn't get it right. When the action is missing,
-		// validation passes!
-	}
 	return v.ValidateStruct(&d,
-		v.Field(&d.Kind, v.By(validKind)), // (*)
+		v.Field(&d.Kind, v.By(KduNsActionKind.Validate)), // (*)
 		v.Field(&d.Name, v.Required),
-		v.Field(&d.Action, v.By(validAction)),
+		v.Field(&d.Action, v.By(NsAction.Validate)), // (*)
 		v.Field(&d.VnfName, v.Required),
 		v.Field(&d.Kdu),
 	)
 
 	// (*) ideally it'd be the In rule, but I couldn't get it right, if
-	// there's no Kind, validation passes!
+	// there's no Kind, validation passes! Ditto for the action.
 }
