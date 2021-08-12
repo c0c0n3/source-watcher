@@ -13,3 +13,6 @@
 
 # Local build output dir
 bin/
+
+# IDE files
+.vscode
