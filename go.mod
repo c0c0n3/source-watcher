@@ -7,7 +7,7 @@ require (
 	github.com/fluxcd/pkg/untar v0.0.5
 	github.com/fluxcd/source-controller/api v0.15.0
 	github.com/go-logr/logr v0.4.0
-	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible // indirect
+	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/spf13/pflag v1.0.5
 	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v0.21.1
