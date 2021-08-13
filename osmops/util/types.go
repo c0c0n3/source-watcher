@@ -12,7 +12,7 @@ import (
 
 type AbsPath struct{ data string }
 
-func (d *AbsPath) Value() string {
+func (d AbsPath) Value() string {
 	return d.data
 }
 
@@ -22,16 +22,16 @@ func IsStringPath(value interface{}) error {
 	return err
 }
 
-func ParseAbsPath(path string) (*AbsPath, error) {
+func ParseAbsPath(path string) (AbsPath, error) {
 	path = strings.TrimSpace(path) // (*)
 	if len(path) == 0 {
-		return nil,
+		return AbsPath{},
 			errors.New("must be a non-empty, non-whitespace-only string")
 	}
 	if p, err := filepath.Abs(path); err != nil {
-		return nil, err
+		return AbsPath{}, err
 	} else {
-		return &AbsPath{data: p}, nil
+		return AbsPath{data: p}, nil
 	}
 
 	// (*) Abs doesn't trim space, e.g. Abs('/a/b ') == '/a/b '.
@@ -39,15 +39,15 @@ func ParseAbsPath(path string) (*AbsPath, error) {
 
 type NonEmptyStr struct{ data string }
 
-func (d *NonEmptyStr) Value() string {
+func (d NonEmptyStr) Value() string {
 	return d.data
 }
 
-func NewNonEmptyStr(s string) (*NonEmptyStr, error) {
+func NewNonEmptyStr(s string) (NonEmptyStr, error) {
 	if len(s) == 0 {
-		return nil, errors.New("nil or empty string")
+		return NonEmptyStr{}, errors.New("nil or empty string")
 	}
-	return &NonEmptyStr{data: s}, nil
+	return NonEmptyStr{data: s}, nil
 }
 
 type HostAndPort struct {
