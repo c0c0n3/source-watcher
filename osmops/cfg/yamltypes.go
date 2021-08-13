@@ -1,3 +1,17 @@
+// Go structs that define the YAML data OSM Ops processes as well as
+// validation functions.
+//
+// There are two kinds of YAML data OSM Ops deals with:
+//
+// * OSM GitOps files. Instructions OSM Ops has to carry out to transition
+//   the OSM deployment to the desired state. For now the only supported
+//   instructions are those related to KDU deployment, see `KduNsAction`.
+// * Program configuration. Some basic data OSM Ops needs to process GitOps
+//   files---e.g. OSM client credentials. See `OpsConfig` and `OsmConnection`.
+//
+// All the stucts implement ozzo-validation's `Validatable` interface to
+// validate the data read from YAML files.
+//
 package cfg
 
 import (
@@ -13,7 +27,13 @@ type OpsConfig struct {
 	// TargetDir is a path, relative to the repo root, pointing to the
 	// directory containing OSM Ops YAML files. Defaults to the repo root
 	// if omitted.
-	TargetDir string `yaml:"targetDir, omitempty"`
+	TargetDir string `yaml:"targetDir"`
+
+	// FileExtensions is a list of file extensions that OSM Ops considers
+	// when reading YAML configuration. OSM Ops looks in the TargetDir for
+	// OSM Ops YAML files and only reads those having the specified extensions.
+	// Defaults to `[".osmops.yaml", ".osmops.yml"]` if omitted.
+	FileExtensions []string `yaml:"fileExtensions"`
 
 	// ConnectionFile is a path to the file containing OSM connection data.
 	// (See `OsmConnection` structure.) This is an absolute path to a separate
