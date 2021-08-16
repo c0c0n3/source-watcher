@@ -1,0 +1,6 @@
+kind: invalid
+name: t1
+action: create
+vnfName: v1
+kdu:
+  name: k1

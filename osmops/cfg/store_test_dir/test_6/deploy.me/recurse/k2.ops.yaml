@@ -1,0 +1,6 @@
+kind: KduNsAction
+name: t2
+action: upgrade
+vnfName: v2
+kdu:
+  name: k2
