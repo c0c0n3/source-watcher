@@ -27,20 +27,12 @@ func (p *processor) log() logr.Logger {
 	return logr.FromContext(p.ctx)
 }
 
-func (p *processor) Process(file *cfg.KduNsActionFile) error {
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
-	kduModel, err := json.Marshal(file.Content.Kdu.Model)
-	if err != nil {
-		return err
+func kduModelToJson(file *cfg.KduNsActionFile) ([]byte, error) {
+	if file.Content.Kdu.Model == nil {
+		return nil, nil
 	}
-
-	cmdFmt := "osm ns-action %s --vnf_name %s --kdu_name %s --action_name %s --params '%s'"
-	cmd := fmt.Sprintf(cmdFmt, file.Content.Name, file.Content.VnfName,
-		file.Content.Kdu.Name, file.Content.Action, kduModel)
-
-	p.log().Info("Processed", "file", file.FilePath.Value(), "command", cmd)
-
-	return nil
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
+	return json.Marshal(file.Content.Kdu.Model)
 
 	// (*) can't use Go's built-in json lib since it will blow up w/
 	//    json: unsupported type: map[interface {}]interface{}
@@ -49,6 +41,30 @@ func (p *processor) Process(file *cfg.KduNsActionFile) error {
 	// which the built-in json doesn't know how to handle.
 	// See:
 	// - https://stackoverflow.com/questions/35377477
+}
+
+func (p *processor) Process(file *cfg.KduNsActionFile) error {
+	kduModel, err := kduModelToJson(file)
+	if err != nil {
+		return err
+	}
+
+	cmd := ""
+	if kduModel != nil {
+		cmdFmt := "osm ns-action %s --vnf_name %s --kdu_name %s " +
+			"--action_name %s --params '%s'"
+		cmd = fmt.Sprintf(cmdFmt, file.Content.Name, file.Content.VnfName,
+			file.Content.Kdu.Name, file.Content.Action, kduModel)
+	} else {
+		cmdFmt := "osm ns-action %s --vnf_name %s --kdu_name %s " +
+			"--action_name %s"
+		cmd = fmt.Sprintf(cmdFmt, file.Content.Name, file.Content.VnfName,
+			file.Content.Kdu.Name, file.Content.Action)
+	}
+
+	p.log().Info("Processed", "file", file.FilePath.Value(), "command", cmd)
+
+	return nil
 }
 
 // TODO dig deep into OSM client code
