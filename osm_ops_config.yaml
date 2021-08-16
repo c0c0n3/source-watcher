@@ -1,0 +1,4 @@
+targetDir: _deployment_
+fileExtensions:
+  - .ops.yaml
+connectionFile: _deployment_/secret.yaml

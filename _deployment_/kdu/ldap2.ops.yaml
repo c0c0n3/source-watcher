@@ -1,0 +1,9 @@
+kind: KduNsAction
+name: ldap2
+action: upgrade
+vnfName: openldap
+kdu:
+  name: ldap
+  model:
+    kdu_model: "stable/openldap:1.2.1"
+    replicaCount: "3"
