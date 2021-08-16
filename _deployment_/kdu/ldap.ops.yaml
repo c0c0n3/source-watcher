@@ -1,8 +1,6 @@
 kind: KduNsAction
 name: ldap
-action: upgrade
+action: delete
 vnfName: openldap
 kdu:
   name: ldap
-  model:
-    kdu_model: "stable/openldap:1.2.2"
