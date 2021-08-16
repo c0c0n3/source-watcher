@@ -38,7 +38,9 @@ func TestOpsConfigValidationOk(t *testing.T) {
 
 var osmConnectionValidationFailFixtures = []OsmConnection{
 	{Hostname: "", User: "u", Password: "p"},
-	{}, {Hostname: "h", Password: "p"},
+	{}, {Hostname: "h", Password: "p"}, {Hostname: "h:80", Password: "p"},
+	{Hostname: "h:20", User: "u", Password: "p"},
+	{Hostname: "h:20", User: "u", Project: "p"},
 }
 
 func TestOsmConnectionValidationFail(t *testing.T) {
@@ -50,7 +52,8 @@ func TestOsmConnectionValidationFail(t *testing.T) {
 }
 
 var osmConnectionValidationOkFixtures = []OsmConnection{
-	{Hostname: "h:0", User: "u", Password: "p"}, {Hostname: "h:1", User: "u"},
+	{Hostname: "h:0", Project: "p", User: "u", Password: "p"},
+	{Hostname: "h:1", Project: "p", User: "u", Password: "*"},
 }
 
 func TestOsmConnectionValidationOk(t *testing.T) {

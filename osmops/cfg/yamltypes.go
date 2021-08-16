@@ -71,21 +71,28 @@ func (d OpsConfig) Validate() error {
 // north-bound interface.
 type OsmConnection struct {
 	Hostname string `yaml:"hostname"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	Project  string `yaml:"project"`  // OSM client default: admin
+	User     string `yaml:"user"`     // OSM client default: admin
+	Password string `yaml:"password"` // OSM client default: admin
 }
+
+// OSM client defaults:
+// * user ("--user" CLI option or "OSM_USER" env var): admin
+// * password ("--password" CLI option or "OSM_PASSWORD" env var): admin
+// * project ("--project" CLI option or "OSM_PROJECT" env var): admin
 
 // Validate OsmConnection data read from a YAML file.
 // The hostname field must be in the form h:p where h is a DNS name or IP
 // address and p is a valid port number---i.e. between 0 and 65535. IP6
 // addresses are accepted too but have to be enclosed in square brackets---e.g.
 // "[::1]:80", "[::1%lo0]:80".
-// The user field must not be empty whereas there are no restrictions for
-// the password field.
+// The user, password and project fields must not be empty.
 func (d OsmConnection) Validate() error {
 	return v.ValidateStruct(&d,
 		v.Field(&d.Hostname, v.By(u.IsHostAndPort)),
+		v.Field(&d.Project, v.Required),
 		v.Field(&d.User, v.Required),
+		v.Field(&d.Password, v.Required),
 	)
 }
 

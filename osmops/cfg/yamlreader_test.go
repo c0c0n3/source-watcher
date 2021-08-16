@@ -78,11 +78,13 @@ targetDir: deploy/ment
 func TestReadOsmConnection(t *testing.T) {
 	data := `
 hostname: osm.dev:8008
+project: pea
 user: silly-billy
 password: "yo! "
 `
 	want := &OsmConnection{
 		Hostname: "osm.dev:8008",
+		Project:  "pea",
 		User:     "silly-billy",
 		Password: "yo! ",
 	}

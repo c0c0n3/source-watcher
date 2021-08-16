@@ -46,7 +46,7 @@ func TestInstantiateStoreWithFullConfig(t *testing.T) {
 	}
 
 	wantCreds := &OsmConnection{
-		Hostname: "host.ie:8008", User: "vans", Password: "*",
+		Hostname: "host.ie:8008", Project: "boetie", User: "vans", Password: "*",
 	}
 	if !reflect.DeepEqual(wantCreds, s.OsmConnection()) {
 		t.Errorf("want: %v; got: %v", wantCreds, s.OsmConnection())
