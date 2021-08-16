@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/fluxcd/source-watcher/osmops/cfg"
 	u "github.com/fluxcd/source-watcher/osmops/util"
@@ -28,6 +28,7 @@ func (p *processor) log() logr.Logger {
 }
 
 func (p *processor) Process(file *cfg.KduNsActionFile) error {
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
 	kduModel, err := json.Marshal(file.Content.Kdu.Model)
 	if err != nil {
 		return err
@@ -37,9 +38,17 @@ func (p *processor) Process(file *cfg.KduNsActionFile) error {
 	cmd := fmt.Sprintf(cmdFmt, file.Content.Name, file.Content.VnfName,
 		file.Content.Kdu.Name, file.Content.Action, kduModel)
 
-	p.log().Info("Processed", "file", file.FilePath, "command", cmd)
+	p.log().Info("Processed", "file", file.FilePath.Value(), "command", cmd)
 
 	return nil
+
+	// (*) can't use Go's built-in json lib since it will blow up w/
+	//    json: unsupported type: map[interface {}]interface{}
+	// In fact, the YAML lib deserialises the Model block into a
+	//    map[interface {}]interface{}
+	// which the built-in json doesn't know how to handle.
+	// See:
+	// - https://stackoverflow.com/questions/35377477
 }
 
 // TODO dig deep into OSM client code
