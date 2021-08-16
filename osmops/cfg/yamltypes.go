@@ -36,9 +36,11 @@ type OpsConfig struct {
 	FileExtensions []string `yaml:"fileExtensions"`
 
 	// ConnectionFile is a path to the file containing OSM connection data.
-	// (See `OsmConnection` structure.) This is an absolute path to a separate
-	// YAML config file mounted on the pod running OSM Ops, typically through
-	// a K8s secret.
+	// (See `OsmConnection` structure.) Typically this is an absolute path
+	// to a separate YAML config file mounted on the pod running OSM Ops
+	// through a K8s secret. While not recommended, it's also possible to
+	// keep this file in the repo. In that case, ConnectionFile should be
+	// a path relative to the repo root directory.
 	ConnectionFile string `yaml:"connectionFile"`
 }
 
