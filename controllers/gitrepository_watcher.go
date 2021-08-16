@@ -31,6 +31,8 @@ import (
 
 	"github.com/fluxcd/pkg/untar"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta1"
+
+	"github.com/fluxcd/source-watcher/osmops/cmd"
 )
 
 // GitRepositoryWatcher watches GitRepository objects for revision changes
@@ -68,16 +70,17 @@ func (r *GitRepositoryWatcher) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	log.Info(summary)
 
-	// list artifact content
-	files, err := ioutil.ReadDir(tmpDir)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to list files, error: %w", err)
-	}
+	cmd.OsmReconcile(ctx, tmpDir)
+	// // list artifact content
+	// files, err := ioutil.ReadDir(tmpDir)
+	// if err != nil {
+	// 	return ctrl.Result{}, fmt.Errorf("failed to list files, error: %w", err)
+	// }
 
-	// do something with the artifact content
-	for _, f := range files {
-		log.Info("Processing " + f.Name())
-	}
+	// // do something with the artifact content
+	// for _, f := range files {
+	// 	log.Info("Processing " + f.Name())
+	// }
 
 	return ctrl.Result{}, nil
 }
