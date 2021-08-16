@@ -16,7 +16,7 @@ type processor struct {
 	received []*KduNsActionFile
 }
 
-func (p *processor) process(file *KduNsActionFile) error {
+func (p *processor) Process(file *KduNsActionFile) error {
 	p.received = append(p.received, file)
 	if file.Content.Kdu.Name == "k3" {
 		return fmt.Errorf("k3")

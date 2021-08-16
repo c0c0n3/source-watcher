@@ -24,7 +24,7 @@ type KduNsActionFile struct {
 type KduNsActionProcessor interface {
 	// Do something with the current OSM GitOps file, possibly returning an
 	// error if something goes wrong.
-	process(file *KduNsActionFile) error
+	Process(file *KduNsActionFile) error
 }
 
 // VisitError wraps any error that happened while traversing the target
@@ -136,7 +136,7 @@ func (k *KduNsActionRepoScanner) visitFile(path string,
 	}
 	file.Content = content
 
-	return visitor.process(file)
+	return visitor.Process(file)
 
 	// (*) paranoia, it should never happen, path is already absolute
 	// since targetDir is---see Walk docs.
