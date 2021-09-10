@@ -25,7 +25,7 @@ multipass shell osm
 #
 # $ osm repo-add --type helm-chart --description "Bitnami repo" bitnami https://charts.bitnami.com/bitnami
 # $ osm repo-add --type helm-chart --description "Cetic repo" cetic https://cetic.github.io/helm-charts
-# $
+# $ osm repo-add --type helm-chart --description "Elastic repo" elastic https://helm.elastic.co
 
 # To clean up:
 #
