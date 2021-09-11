@@ -49,6 +49,12 @@ Set-Cookie: session_id=072faf1c629771cdad9133c133fe8bee1202f258; expires=Wed, 08
 ...
 ```
 
+Notice the token is valid for an hour:
+
+    issued_at = Wednesday, 8 September 2021 17:52:11.125 (GMT)
+    expires   = Wednesday, 8 September 2021 18:52:11.125 (GMT)
+
+
 ### Getting the history of operations on an NS instance
 
 OSM client command
@@ -128,6 +134,26 @@ Set-Cookie: session_id=4cd3ace1f2635ca888bbbb6d24a5905540345809; expires=Wed, 08
 }
 ```
 
+Notice VIM account names have to be unique. In fact, OSM NBI enforces that.
+If you try creating another VIM account with the same name, you get an error:
+
+```bash
+$ curl localhost/osm/admin/v1/vim_accounts \
+    -v -X POST \
+    -H 'Authorization: Bearer TuD41hLjDvjlR2cPcAFvWcr6FGvRhIk2' \
+    -H 'Content-Type: application/yaml' \
+    -d'{"name": "openvim-site", "vim_type": "openvim", "description": "Openvim site", "vim_url": "http://10.10.10.10:9080/openvim", "vim_user": "dummy", "vim_password": "dummy", "vim_tenant_name": "osm"}'
+
+...
+HTTP/1.1 409 Conflict
+...
+---
+code: CONFLICT
+detail: name 'openvim-site' already exists for vim_accounts
+status: 409
+```
+
+
 ### KNF service onboarding and instantiation
 
 Example flow from OSM manual section: 5.6.5.1 KNF Helm Chart
@@ -143,7 +169,7 @@ the repo in section 5.6.5.1 is outdated.
 
 #### Onboarding
 
-OSM client command
+OSM client command to upload a package with a VNFD for an Open LDAP KNF:
 
 ```bash
 $ osm nfpkg-create openldap_knf.tar.gz
@@ -182,7 +208,22 @@ Set-Cookie: session_id=78799fcfb8463bfb1da410066fefa6c89e9ed1ec; expires=Fri, 10
 }
 ```
 
-OSM client command
+Notice OSM NBI enforces uniqueness of VNFD IDs. If you try uploading another
+package with a VNFD having the same ID as the one we've just uploaded, OSM
+NBI will complain loudly:
+
+```http
+HTTP/1.1 409 Conflict
+...
+{
+    "code": "CONFLICT",
+    "status": 409,
+    "detail": "vnfd with id 'openldap_knf' already exists for this project"
+}
+```
+
+OSM client command to upload a package with a NSD for the Open LDAP KNF
+defined by the previous package:
 
 ```bash
 $ osm nspkg-create openldap_ns.tar.gz
@@ -221,13 +262,26 @@ Set-Cookie: session_id=e9ee44a81f693d768ffe4b7265ab8cfbcef078c0; expires=Fri, 10
 }
 ```
 
+Notice OSM NBI enforces uniqueness of NSD IDs. If you try uploading another
+package with a NSD having the same ID as the one we've just uploaded, OSM
+NBI will complain loudly:
+
+```http
+HTTP/1.1 409 Conflict
+...
+{
+    "code": "CONFLICT",
+    "status": 409,
+    "detail": "nsd with id 'openldap_ns' already exists for this project"
+}
+```
+
 #### NS instantiation
 
 OSM client command to create an NS instance using the OpenLDAP chart uploaded
 by the previous commands. Notice we use the VIM account name and OSM client
-looks up the corresponding ID for us. (**Question**: shouldn't we always
-use IDs? What happens if there's duplicated VIM account names? Which VIM
-account would the OSM client pick?!)
+looks up the corresponding ID for us. Notice the name-ID lookup works because
+OSM NBI enforces VIM name uniqueness---see earlier note about it.
 
 ```bash
 $ osm ns-create --ns_name ldap --nsd_name openldap_ns --vim_account mylocation1
@@ -250,9 +304,30 @@ $ osm ns-create --ns_name ldap2 --nsd_name openldap_ns \
 
 [HTTP message flow](./message-flow.ns-create2.md)
 
+Notice OSM NBI doesn't enforce uniqueness of NS names. In fact, it lets you
+happily duplicate e.g. the `ldap` name we created earlier:
+
+```bash
+$ curl localhost/osm/nslcm/v1/ns_instances_content \
+    -v -X POST \
+    -H 'Authorization: Bearer 0WhgBufy1Wt82NbF9OsmftwpRfcsV4sU' \
+    -H 'Content-Type: application/yaml' \
+    -d'{"nsdId": "aba58e40-d65f-4f4e-be0a-e248c14d3e03", "nsName": "ldap", "nsDescription": "default description", "vimAccountId": "4a4425f7-3e72-4d45-a4ec-4241186f3547"}'
+...
+HTTP/1.1 201 Created
+...
+---
+id: 794ef9a2-8bbb-42c1-869a-bab6422982ec
+nslcmop_id: 0fdfaa6a-b742-480c-9701-122b3f732e4f
+```
+
 #### NS upgrade
 
-OSM client command to upgrade the first LDAP NS we created earlier.
+OSM client command to upgrade the first LDAP NS we created earlier. Notice
+OSM client looks up the instance ID from the name we specify in the command
+line (`ldap`), but this is **not** a good idea since, as noted earlier,
+NS instance names aren't unique. To avoid wreaking havoc we should always
+use NS instance IDs but I don't think OSM client actually supports that?
 
 ```bash
 $ osm ns-action ldap --vnf_name openldap --kdu_name ldap --action_name upgrade --params '{kdu_model: "stable/openldap:1.2.2"}'
