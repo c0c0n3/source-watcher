@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -148,6 +149,28 @@ func (d *HostAndPort) Port() int {
 
 func (d *HostAndPort) String() string {
 	return fmt.Sprintf("%s:%d", d.h, d.p)
+}
+
+func (d *HostAndPort) BuildHttpUrl(secure bool, path string) (*url.URL, error) {
+	if u, err := url.ParseRequestURI(path); err != nil {
+		return nil, err
+	} else {
+		if secure {
+			u.Scheme = "https"
+		} else {
+			u.Scheme = "http"
+		}
+		u.Host = d.String()
+		return u, nil
+	}
+}
+
+func (d *HostAndPort) Http(path string) (*url.URL, error) {
+	return d.BuildHttpUrl(false, path)
+}
+
+func (d *HostAndPort) Https(path string) (*url.URL, error) {
+	return d.BuildHttpUrl(true, path)
 }
 
 type StrEnum struct {

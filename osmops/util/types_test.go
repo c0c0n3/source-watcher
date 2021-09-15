@@ -185,6 +185,61 @@ func TestParseHostAndPort(t *testing.T) {
 	}
 }
 
+var httpUrlErrorFixtures = []string{"", "a", "a/b"}
+
+func TestHttpUrlError(t *testing.T) {
+	hp, _ := ParseHostAndPort("x:80")
+	for k, d := range httpUrlErrorFixtures {
+		if got, err := hp.Http(d); err == nil {
+			t.Errorf("[%d] want error; got: %v", k, got)
+		}
+	}
+}
+
+var httpUrlFixtures = []struct {
+	inPath string
+	want   string
+}{
+	{"/", "http://x:80/"},
+	{"/a", "http://x:80/a"}, {"/a/", "http://x:80/a/"},
+	{"/a/b", "http://x:80/a/b"}, {"/a/b/", "http://x:80/a/b/"},
+}
+
+func TestHttpUrl(t *testing.T) {
+	hp, _ := ParseHostAndPort("x:80")
+	for k, d := range httpUrlFixtures {
+		got, err := hp.Http(d.inPath)
+		if err != nil {
+			t.Fatalf("[%d] want string repr: %s; got: %v", k, d.want, err)
+		}
+		if got.String() != d.want {
+			t.Errorf("[%d] want string repr: %s; got: %v", k, d.want, got)
+		}
+	}
+}
+
+var httpsUrlFixtures = []struct {
+	inPath string
+	want   string
+}{
+	{"/", "https://x:80/"},
+	{"/a", "https://x:80/a"}, {"/a/", "https://x:80/a/"},
+	{"/a/b", "https://x:80/a/b"}, {"/a/b/", "https://x:80/a/b/"},
+}
+
+func TestHttspUrl(t *testing.T) {
+	hp, _ := ParseHostAndPort("x:80")
+	for k, d := range httpsUrlFixtures {
+		got, err := hp.Https(d.inPath)
+		if err != nil {
+			t.Fatalf("[%d] want string repr: %s; got: %v", k, d.want, err)
+		}
+		if got.String() != d.want {
+			t.Errorf("[%d] want string repr: %s; got: %v", k, d.want, got)
+		}
+	}
+}
+
 func TestEmptyStrEnum(t *testing.T) {
 	e := NewStrEnum()
 	if e.IndexOf("") != NotALabel || e.IndexOf("x") != NotALabel {
