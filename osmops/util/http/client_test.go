@@ -143,5 +143,16 @@ func TestRunWithNilReqSender(t *testing.T) {
 	if _, err := Request().RunWith(nil); err == nil {
 		t.Errorf("want error; got: nil")
 	}
-	HandleResponse(&http.Response{}, nil)
+}
+
+func TestHandleResponseWithNoHandlers(t *testing.T) {
+	if err := HandleResponse(&http.Response{}); err != nil {
+		t.Errorf("want: do nothing if no handler; got: %v", err)
+	}
+}
+
+func TestHandleResponseErrorOnNilHandler(t *testing.T) {
+	if err := HandleResponse(&http.Response{}, nil); err == nil {
+		t.Errorf("want: error; got: nil")
+	}
 }

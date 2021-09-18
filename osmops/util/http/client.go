@@ -54,6 +54,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -109,7 +110,10 @@ func HandleResponse(response *http.Response, handlers ...ResHandler) error {
 	if response.Body != nil {
 		defer response.Body.Close()
 	}
-	for _, h := range handlers {
+	for k, h := range handlers {
+		if h == nil {
+			return fmt.Errorf("nil response handler [%d]", k)
+		}
 		if err := h.Handle(response); err != nil {
 			return err
 		}
