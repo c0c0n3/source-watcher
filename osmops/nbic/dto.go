@@ -3,7 +3,7 @@ package nbic
 import (
 	"encoding/json"
 
-	"github.com/fluxcd/source-watcher/osmops/nbic/sec"
+	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
 )
 
 type nbiTokenPayloadView struct {
