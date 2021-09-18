@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -123,6 +124,52 @@ func TestEmptyBody(t *testing.T) {
 	}
 	if string(gotBody) != "" {
 		t.Errorf("want empty body; got: %v", gotBody)
+	}
+}
+
+func TestJsonBodyNilContent(t *testing.T) {
+	req, err := BuildRequest(
+		JsonBody(nil),
+	)
+	if err != nil {
+		t.Fatalf("want null JSON value; got: %v", err)
+	}
+
+	gotBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		t.Fatalf("want null JSON value; got: %v", err)
+	}
+	if string(gotBody) != "null" {
+		t.Errorf("want null JSON body; got: %v", string(gotBody))
+	}
+}
+
+func TestJsonBodyNonNilContent(t *testing.T) {
+	content := "yo!"
+	req, err := BuildRequest(
+		JsonBody(content),
+	)
+	if err != nil {
+		t.Fatalf("want JSON body; got: %v", err)
+	}
+
+	gotBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		t.Fatalf("want: body; got: %v", err)
+	}
+	serializedContent := fmt.Sprintf(`"%s"`, content)
+	if string(gotBody) != serializedContent {
+		t.Errorf("want: %s; got: %v", serializedContent, string(gotBody))
+	}
+}
+
+func TestJsonBodyMarshalError(t *testing.T) {
+	notSerializable := func() {}
+	req, err := BuildRequest(
+		JsonBody(notSerializable),
+	)
+	if err == nil {
+		t.Errorf("want JSON marshal error; got: %v", req)
 	}
 }
 

@@ -1,3 +1,4 @@
+// sec provides basic means to manage the retrieval and refresh of auth tokens.
 package sec
 
 import (

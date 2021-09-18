@@ -4,6 +4,7 @@ package http
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -109,6 +110,16 @@ func Body(content []byte) ReqBuilder {
 		}
 
 		return nil
+	}
+}
+
+func JsonBody(content interface{}) ReqBuilder {
+	return func(request *http.Request) error {
+		if data, err := json.Marshal(content); err != nil {
+			return err
+		} else {
+			return Body(data)(request)
+		}
 	}
 }
 
