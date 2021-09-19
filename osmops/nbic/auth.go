@@ -1,0 +1,64 @@
+package nbic
+
+import (
+	"errors"
+	"net/url"
+
+	. "github.com/fluxcd/source-watcher/osmops/util/http"
+	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
+)
+
+// UserCredentials holds the data needed to request an OSM NBI token.
+type UserCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Project  string `json:"project_id"`
+}
+
+type tokenPayloadView struct { // only the response fields we care about.
+	Id      string  `json:"id"`
+	Expires float64 `json:"expires"`
+}
+
+type authMan struct {
+	creds    UserCredentials
+	endpoint *url.URL
+	agent    ReqSender
+}
+
+// NewAuthz builds a TokenManager to acquire and refresh OSM NBI access tokens.
+func NewAuthz(conn Connection, creds UserCredentials, transport ReqSender) (
+	*sec.TokenManager, error) {
+	if transport == nil {
+		return nil, errors.New("nil transport")
+	}
+	endpoint, err := conn.Tokens()
+	if err != nil {
+		return nil, err
+	}
+
+	theMan := &authMan{
+		creds:    creds,
+		endpoint: endpoint,
+		agent:    transport,
+	}
+
+	return sec.NewTokenManager(theMan.acquireToken, &sec.MemoryTokenStore{})
+}
+
+func (m *authMan) acquireToken() (*sec.Token, error) {
+	payload := tokenPayloadView{}
+	_, err := Request(
+		POST, At(m.endpoint),
+		Content(MediaType.YAML), // same as what OSM client does
+		Accept(MediaType.JSON),
+		JsonBody(m.creds),
+	).
+		SetHandler(ReadJsonResponse(&payload)).
+		RunWith(m.agent)
+
+	if err != nil {
+		return nil, err
+	}
+	return sec.NewToken(payload.Id, payload.Expires), nil
+}
