@@ -299,3 +299,23 @@ func TestStrEnumCaseInsensitive(t *testing.T) {
 		t.Errorf("want: uppercase B is index of b; got: not a label")
 	}
 }
+
+func TestEmptyIntSet(t *testing.T) {
+	s := ToIntSet()
+	if s.Contains(0) {
+		t.Errorf("want empty; got: %v", s)
+	}
+}
+
+func TestNonEmptyIntSet(t *testing.T) {
+	s := ToIntSet(1, 2)
+	if s.Contains(0) {
+		t.Errorf("want: 0 not in s; got: %v", s)
+	}
+	if !s.Contains(1) {
+		t.Errorf("want: 1 in s; got: %v", s)
+	}
+	if !s.Contains(2) {
+		t.Errorf("want: 2 in s; got: %v", s)
+	}
+}

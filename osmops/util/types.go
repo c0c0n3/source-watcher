@@ -214,3 +214,20 @@ func (d StrEnum) Validate(label interface{}) error {
 	}
 	return fmt.Errorf("not an enum label: %v", label)
 }
+
+type IntSet map[int]bool
+
+// the joys of boilerplate, see: https://stackoverflow.com/questions/34018908
+
+func ToIntSet(values ...int) IntSet {
+	set := map[int]bool{}
+	for _, v := range values {
+		set[v] = true
+	}
+	return set
+}
+
+func (s IntSet) Contains(value int) bool {
+	_, ok := s[value]
+	return ok
+}
