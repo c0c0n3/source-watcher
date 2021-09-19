@@ -86,7 +86,7 @@ func (m *TokenManager) GetAccessToken() (*Token, error) {
 	} else {
 		if newToken.HasExpired() {
 			return nil, fmt.Errorf(
-				"auth endpoint returned expired token: %v", newToken)
+				"auth endpoint returned expired token: %+v", *newToken)
 		}
 		m.store.Set(newToken)
 		return newToken, nil
