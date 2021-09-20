@@ -13,11 +13,25 @@ type Connection struct {
 	Secure  bool
 }
 
-func (b Connection) buildUrl(path string) (*url.URL, error) {
-	return b.Address.BuildHttpUrl(b.Secure, path)
+func (b Connection) buildUrl(path string) *url.URL {
+	if url, err := b.Address.BuildHttpUrl(b.Secure, path); err != nil {
+		panic(err) // see note below
+	} else {
+		return url
+	}
 }
 
+// NOTE. Panic on URL building.
+// Ideally buildUrl should return (*url.URL, error) instead of panicing. But
+// then it becomes a royal pain in the backside to write code that uses the
+// URL functions below and testing for the URL build error case needs to
+// happen at every calling site---e.g. if you call Tokens then ideally there
+// should be a unit test to check what happens when Tokens returns an error.
+// So we take a shortcut with the panic call. As long as we call all the
+// URL functions below in our unit tests, we can be sure the panic won't
+// happen at runtime.
+
 // Tokens returns the URL to the NBI tokens endpoint.
-func (b Connection) Tokens() (*url.URL, error) {
+func (b Connection) Tokens() *url.URL {
 	return b.buildUrl("/osm/admin/v1/tokens")
 }

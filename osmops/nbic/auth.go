@@ -32,14 +32,10 @@ func NewAuthz(conn Connection, creds UserCredentials, transport ReqSender) (
 	if transport == nil {
 		return nil, errors.New("nil transport")
 	}
-	endpoint, err := conn.Tokens()
-	if err != nil {
-		return nil, err
-	}
 
 	theMan := &authMan{
 		creds:    creds,
-		endpoint: endpoint,
+		endpoint: conn.Tokens(),
 		agent:    transport,
 	}
 
