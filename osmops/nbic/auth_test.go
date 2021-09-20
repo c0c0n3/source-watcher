@@ -2,52 +2,12 @@ package nbic
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/fluxcd/source-watcher/osmops/util"
 )
-
-// expired on Wed Sep 08 2021 18:52:11 GMT+0000
-var expiredNbiTokenPayload = `{
-	"issued_at": 1631123531.1251214,
-	"expires": 1631127131.1251214,
-	"_id": "TuD41hLjDvjlR2cPcAFvWcr6FGvRhIk2",
-	"id": "TuD41hLjDvjlR2cPcAFvWcr6FGvRhIk2",
-	"project_id": "fada443a-905c-4241-8a33-4dcdbdac55e7",
-	"project_name": "admin",
-	"username": "admin",
-	"user_id": "5c6f2d64-9c23-4718-806a-c74c3fc3c98f",
-	"admin": true,
-	"roles": [{
-		"name": "system_admin",
-		"id": "cb545e44-cd2b-4c0b-93aa-7e2cee79afc3"
-	}]
-}`
-
-// expires on Sat May 17 2053 20:38:51 GMT+0000
-var validNbiTokenPayload = `{
-	"issued_at": 2631127131.1251214,
-	"expires": 2631127131.1251214,
-	"_id": "TuD41hLjDvjlR2cPcAFvWcr6FGvRhIk2",
-	"id": "TuD41hLjDvjlR2cPcAFvWcr6FGvRhIk2",
-	"project_id": "fada443a-905c-4241-8a33-4dcdbdac55e7",
-	"project_name": "admin",
-	"username": "admin",
-	"user_id": "5c6f2d64-9c23-4718-806a-c74c3fc3c98f",
-	"admin": true,
-	"roles": [{
-		"name": "system_admin",
-		"id": "cb545e44-cd2b-4c0b-93aa-7e2cee79afc3"
-	}]
-}`
-
-func stringReader(data string) io.ReadCloser {
-	return io.NopCloser(strings.NewReader(data))
-}
 
 var usrCreds = UserCredentials{
 	Username: "admin", Password: "admin", Project: "admin",

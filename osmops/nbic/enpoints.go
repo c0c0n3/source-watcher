@@ -35,3 +35,8 @@ func (b Connection) buildUrl(path string) *url.URL {
 func (b Connection) Tokens() *url.URL {
 	return b.buildUrl("/osm/admin/v1/tokens")
 }
+
+// NsDescriptors returns the URL to the NBI NS descriptors endpoint.
+func (b Connection) NsDescriptors() *url.URL {
+	return b.buildUrl("/osm/nsd/v1/ns_descriptors")
+}
