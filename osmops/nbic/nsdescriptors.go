@@ -19,6 +19,20 @@ func buildNsDescMap(ds []nsDescView) nsDescMap {
 	return descMap
 }
 
+// NOTE. NSD name to ID lookup.
+// For our nsDescMap to work, there must be a bijection between NSD IDs and
+// name IDs. Lucklily, this is the case since OSM NBI enforces uniqueness of
+// NSD name IDs. If you try uploading another package with a NSD having the
+// same name ID of an existing one, OSM NBI will complain loudly, e.g.
+//
+// HTTP/1.1 409 Conflict
+// ...
+// {
+//     "code": "CONFLICT",
+//     "status": 409,
+//     "detail": "nsd with id 'openldap_ns' already exists for this project"
+// }
+
 func (c *Session) getNsDescriptors() ([]nsDescView, error) {
 	data := []nsDescView{}
 	if _, err := c.getJson(c.conn.NsDescriptors(), &data); err != nil {
@@ -36,7 +50,7 @@ func (c *Session) lookupNsDescriptorId(name string) (string, error) {
 		}
 	}
 	if id, ok := c.nsdMap[name]; !ok {
-		return "", fmt.Errorf("no nsd found for name ID: %s", name)
+		return "", fmt.Errorf("no NSD found for name ID: %s", name)
 	} else {
 		return id, nil
 	}

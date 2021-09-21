@@ -180,3 +180,42 @@ var nsDescriptors = `[
         }
     }
 ]`
+
+var vimAccounts = `[
+    {
+        "_id": "4a4425f7-3e72-4d45-a4ec-4241186f3547",
+        "name": "mylocation1",
+        "vim_type": "dummy",
+        "description": null,
+        "vim_url": "http://localhost/dummy",
+        "vim_user": "u",
+        "vim_password": "fNnfmd3KFXvfyVKu3nzItg==",
+        "vim_tenant_name": "p",
+        "_admin": {
+            "created": 1631212983.5388303,
+            "modified": 1631212983.5388303,
+            "projects_read": [
+                "fada443a-905c-4241-8a33-4dcdbdac55e7"
+            ],
+            "projects_write": [
+                "fada443a-905c-4241-8a33-4dcdbdac55e7"
+            ],
+            "operationalState": "ENABLED",
+            "operations": [
+                {
+                    "lcmOperationType": "create",
+                    "operationState": "COMPLETED",
+                    "startTime": 1631212983.5930278,
+                    "statusEnteredTime": 1631212984.0220273,
+                    "operationParams": null
+                }
+            ],
+            "current_operation": null,
+            "detailed-status": ""
+        },
+        "schema_version": "1.11",
+        "admin": {
+            "current_operation": 0
+        }
+    }
+]`

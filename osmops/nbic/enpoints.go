@@ -40,3 +40,8 @@ func (b Connection) Tokens() *url.URL {
 func (b Connection) NsDescriptors() *url.URL {
 	return b.buildUrl("/osm/nsd/v1/ns_descriptors")
 }
+
+// VimAccounts returns the URL to the VIM accounts endpoint.
+func (b Connection) VimAccounts() *url.URL {
+	return b.buildUrl("/osm/admin/v1/vim_accounts")
+}
