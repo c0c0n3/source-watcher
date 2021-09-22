@@ -16,6 +16,12 @@ func stringReader(data string) io.ReadCloser {
 	return io.NopCloser(strings.NewReader(data))
 }
 
+func send(response *http.Response) ReqSender {
+	return func(req *http.Request) (*http.Response, error) {
+		return response, nil
+	}
+}
+
 func TestJsonReaderErrorOnNilResponse(t *testing.T) {
 	target := TestData{}
 	reader := ReadJsonResponse(&target)
@@ -33,13 +39,14 @@ func TestJsonReaderErrorOnNilTarget(t *testing.T) {
 
 func TestJsonReaderErrorOnUnexpectedResponseCode(t *testing.T) {
 	target := TestData{}
-	reader := ReadJsonResponse(&target) // default code: 200
-	if err := reader.Handle(&http.Response{StatusCode: 400}); err == nil {
-		t.Errorf("want: error; got: nil")
+	response := &http.Response{
+		StatusCode: 400,
+		Body:       stringReader(`{"x": 1, "y": {"z": 2}}`),
 	}
-
-	reader = ReadJsonResponse(&target, 201, 401) // no default code of 200
-	if err := reader.Handle(&http.Response{StatusCode: 400}); err == nil {
+	_, err := Request(GET).
+		SetHandler(ExpectSuccess(), ReadJsonResponse(&target)).
+		RunWith(send(response))
+	if err == nil {
 		t.Errorf("want: error; got: nil")
 	}
 }
@@ -47,15 +54,11 @@ func TestJsonReaderErrorOnUnexpectedResponseCode(t *testing.T) {
 func TestJsonReaderGetData(t *testing.T) {
 	target := TestData{}
 	response := &http.Response{
-		StatusCode: 200,
-		Body:       stringReader(`{"x": 1, "y": {"z": 2}}`),
-	}
-	send := func(req *http.Request) (*http.Response, error) {
-		return response, nil
+		Body: stringReader(`{"x": 1, "y": {"z": 2}}`),
 	}
 	res, err := Request(GET).
 		SetHandler(ReadJsonResponse(&target)).
-		RunWith(send)
+		RunWith(send(response))
 
 	if err != nil {
 		t.Errorf("want: deserialized JSON; got: %v", err)
@@ -77,14 +80,11 @@ func TestJsonReaderGetData(t *testing.T) {
 
 func TestExpectSuccess(t *testing.T) {
 	response := &http.Response{}
-	send := func(req *http.Request) (*http.Response, error) {
-		return response, nil
-	}
 	for code := 200; code < 300; code++ {
 		response.StatusCode = code
 		_, err := Request(GET).
 			SetHandler(ExpectSuccess()).
-			RunWith(send)
+			RunWith(send(response))
 		if err != nil {
 			t.Errorf("want: success; got: %v", err)
 		}
@@ -93,7 +93,7 @@ func TestExpectSuccess(t *testing.T) {
 		response.StatusCode = code
 		_, err := Request(GET).
 			SetHandler(ExpectSuccess()).
-			RunWith(send)
+			RunWith(send(response))
 		if err == nil {
 			t.Errorf("[%d] want: error; got: nil", code)
 		}
@@ -102,15 +102,12 @@ func TestExpectSuccess(t *testing.T) {
 
 func TestExpectStatusCodeOneOf(t *testing.T) {
 	response := &http.Response{}
-	send := func(req *http.Request) (*http.Response, error) {
-		return response, nil
-	}
 	want := []int{200, 201, 404}
 	for _, code := range want {
 		response.StatusCode = code
 		_, err := Request(GET).
 			SetHandler(ExpectStatusCodeOneOf(want...)).
-			RunWith(send)
+			RunWith(send(response))
 		if err != nil {
 			t.Errorf("want: success; got: %v", err)
 		}
@@ -119,7 +116,7 @@ func TestExpectStatusCodeOneOf(t *testing.T) {
 		response.StatusCode = code
 		_, err := Request(GET).
 			SetHandler(ExpectStatusCodeOneOf(want...)).
-			RunWith(send)
+			RunWith(send(response))
 		if err == nil {
 			t.Errorf("[%d] want: error; got: nil", code)
 		}
@@ -128,12 +125,9 @@ func TestExpectStatusCodeOneOf(t *testing.T) {
 
 func TestExpectStatusCodeNone(t *testing.T) {
 	response := &http.Response{StatusCode: 200}
-	send := func(req *http.Request) (*http.Response, error) {
-		return response, nil
-	}
 	_, err := Request(GET).
 		SetHandler(ExpectStatusCodeOneOf()).
-		RunWith(send)
+		RunWith(send(response))
 	if err == nil {
 		t.Errorf("want: error; got: nil")
 	}

@@ -31,15 +31,18 @@
 // Out of convenience, there's also an Exchange type to string builders and
 // handlers together in an HTTP request-reply message flow where execution
 // stops at the first error---so you don't have to litter your code with
-// `if err ...` statements. Example:
+// `if err ...` statements. Here's an example that also showcases some of
+// the built-in ResHandlers.
 //
+//     url, _ := url.Parse("http://yapi")
+//     responseData := YouData{}
 //     client := &http.Client{Timeout: time.Second * 10}
 //     Request(
 //         POST, At(url),
 //         Content(MediaType.JSON),
 //         Body(content),
 //     ).
-//     SetHandler(jsonReader, responseLogger).
+//     SetHandler(ExpectSuccess(), ReadJsonResponse(&responseData)).
 //     RunWith(client.Do)
 //
 // Notice RunWith takes a ReqSender so you can easily unit-test your code by
