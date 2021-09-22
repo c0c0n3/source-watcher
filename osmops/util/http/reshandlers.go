@@ -66,3 +66,49 @@ func ReadJsonResponse(target interface{}, expectedStatusCode ...int) ResHandler 
 		expectedStatusCodes: util.ToIntSet(expectedStatusCode...),
 	}
 }
+
+type expectSuccessfulResponse struct{}
+
+func (e expectSuccessfulResponse) Handle(res *http.Response) error {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return fmt.Errorf("expected successful response, got: %s", res.Status)
+	}
+	return nil
+}
+
+// ExpectSuccess builds a ResHandler to check for successful responses.
+// If the response code is in the range 200-299 (both inclusive), the
+// returned ResHandler does nothing. Otherwise it returns an error---that
+// stops any following ResHandler to run.
+func ExpectSuccess() ResHandler {
+	return expectSuccessfulResponse{}
+}
+
+// TODO. Implement expect for other status code ranges too?
+// Informational responses (100–199)
+// Successful responses (200–299)     --> DONE
+// Redirects (300–399)
+// Client errors (400–499)
+// Server errors (500–599)
+
+type expectStatusCodeInSet struct {
+	expectedStatusCodes util.IntSet
+}
+
+func (e *expectStatusCodeInSet) Handle(res *http.Response) error {
+	if !e.expectedStatusCodes.Contains(res.StatusCode) {
+		return fmt.Errorf("unexpected response status: %s", res.Status)
+	}
+	return nil
+}
+
+// ExpectStatusCodeOneOf builds a ResHandler to check the response status code
+// is among the given ones.
+// If the response code is in the given list, the returned ResHandler does
+// nothing. Otherwise it returns an error---that stops any following ResHandler
+// to run.
+func ExpectStatusCodeOneOf(expectedStatusCode ...int) ResHandler {
+	return &expectStatusCodeInSet{
+		expectedStatusCodes: util.ToIntSet(expectedStatusCode...),
+	}
+}
