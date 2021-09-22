@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"gopkg.in/yaml.v2"
+
 	u "github.com/fluxcd/source-watcher/osmops/util"
 )
 
@@ -158,6 +160,34 @@ func TestJsonBodyNonNilContent(t *testing.T) {
 		t.Fatalf("want: body; got: %v", err)
 	}
 	serializedContent := fmt.Sprintf(`"%s"`, content)
+	if string(gotBody) != serializedContent {
+		t.Errorf("want: %s; got: %v", serializedContent, string(gotBody))
+	}
+}
+
+type Unknown struct {
+	X interface{} `yaml:"x" json:"x"`
+}
+
+func TestJsonBodyMarshalUnknownType(t *testing.T) {
+	serializedContent := `{"x":{"y":1}}`
+	yamlData := []byte(serializedContent)
+	content := Unknown{}
+	if err := yaml.Unmarshal(yamlData, &content); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	req, err := BuildRequest(
+		JsonBody(content),
+	)
+	if err != nil {
+		t.Fatalf("want JSON body; got: %v", err)
+	}
+
+	gotBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		t.Fatalf("want: body; got: %v", err)
+	}
 	if string(gotBody) != serializedContent {
 		t.Errorf("want: %s; got: %v", serializedContent, string(gotBody))
 	}

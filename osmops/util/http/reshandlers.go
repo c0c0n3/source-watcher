@@ -1,9 +1,10 @@
 package http
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/fluxcd/source-watcher/osmops/util"
 )
@@ -24,8 +25,17 @@ func (r *jsonResReader) Handle(res *http.Response) error {
 		return fmt.Errorf("unexpected response status: %s", res.Status)
 	}
 
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
 	decoder := json.NewDecoder(res.Body)
 	return decoder.Decode(r.deserialized)
+
+	// (*) json-iterator lib.
+	// We use it in the JsonBody builder to work around encoding/json's
+	// inability to serialise map[interface {}]interface{} types. Here
+	// we're parsing JSON into a data structure and AFAICT the built-in
+	// json lib can parse pretty much any valid JSON you throw at it.
+	// So the only reason to use json-iterator in place of encoding/json
+	// is performance: json-iterator is way faster than encoding/json.
 }
 
 // ReadJsonResponse builds a ResHandler to deserialise a JSON response body.

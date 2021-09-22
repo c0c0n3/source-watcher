@@ -8,7 +8,12 @@ import (
 )
 
 type TestData struct {
-	X int `json:"x"`
+	X int         `json:"x"`
+	Y interface{} `json:"y"`
+}
+
+func stringReader(data string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(data))
 }
 
 func TestJsonReaderErrorOnNilResponse(t *testing.T) {
@@ -43,7 +48,7 @@ func TestJsonReaderGetData(t *testing.T) {
 	target := TestData{}
 	response := &http.Response{
 		StatusCode: 200,
-		Body:       io.NopCloser(strings.NewReader(`{"x": 1}`)),
+		Body:       stringReader(`{"x": 1, "y": {"z": 2}}`),
 	}
 	send := func(req *http.Request) (*http.Response, error) {
 		return response, nil
@@ -58,7 +63,14 @@ func TestJsonReaderGetData(t *testing.T) {
 	if res != response {
 		t.Errorf("want: %v; got: %v", response, res)
 	}
-	if target.X != 1 {
+	if target.X != 1.0 {
 		t.Errorf("want: deserialized JSON; got: %+v", target)
+	}
+	if y, ok := target.Y.(map[string]interface{}); !ok {
+		t.Errorf("want: deserialized JSON; got: %+v", target)
+	} else {
+		if y["z"] != 2.0 {
+			t.Errorf("want: deserialized JSON; got: %+v", target)
+		}
 	}
 }

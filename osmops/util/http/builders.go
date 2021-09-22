@@ -4,13 +4,14 @@ package http
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
 )
@@ -115,12 +116,29 @@ func Body(content []byte) ReqBuilder {
 
 func JsonBody(content interface{}) ReqBuilder {
 	return func(request *http.Request) error {
+		var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
 		if data, err := json.Marshal(content); err != nil {
 			return err
 		} else {
 			return Body(data)(request)
 		}
 	}
+	// (*) json-iterator lib.
+	// We use it in place of json from Go's standard lib b/c it can handle
+	// the serialisation of fields of type map[interface {}]interface{}
+	// where the built-in json module will blow up w/
+	//    json: unsupported type: map[interface {}]interface{}
+	// If you're reading in YAML and then writing it out as JSON you could get
+	// bitten by this. For example, say you use "gopkg.in/yaml.v2" to read
+	// some YAML that has a field containing arbitrary JSON into a struct
+	// with a field X of type interface{}---you don't know what the JSON looks
+	// like, but later on you still want to be able to write it out.
+	// The YAML lib will read the JSON into X with a type of
+	//   map[interface {}]interface{}
+	// but when you call the built-in json.Marshal, it'll blow up in your face
+	// b/c it doesn't know how to handle that type.
+	// See:
+	// - https://stackoverflow.com/questions/35377477
 }
 
 // TODO also implement streaming body? most of the standard libs aren't built
