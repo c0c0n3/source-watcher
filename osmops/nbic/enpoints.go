@@ -45,3 +45,8 @@ func (b Connection) NsDescriptors() *url.URL {
 func (b Connection) VimAccounts() *url.URL {
 	return b.buildUrl("/osm/admin/v1/vim_accounts")
 }
+
+// NsInstances returns the URL to the NS instances content endpoint.
+func (b Connection) NsInstancesContent() *url.URL {
+	return b.buildUrl("/osm/nslcm/v1/ns_instances_content")
+}

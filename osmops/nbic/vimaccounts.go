@@ -1,6 +1,8 @@
 package nbic
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type vimAccountView struct { // only the response fields we care about.
 	Id   string `json:"_id"`

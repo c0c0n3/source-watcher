@@ -37,6 +37,7 @@ type Session struct {
 	authz     *sec.TokenManager
 	nsdMap    nsDescMap
 	vimAccMap vimAccountMap
+	nsInstMap nsInstanceMap
 }
 
 func New(conn Connection, creds UserCredentials, transport ...ReqSender) (

@@ -33,6 +33,7 @@ func newMockNbi() *mockNbi {
 	mock.handlers[handlerKey("POST", "/osm/admin/v1/tokens")] = tokenHandler
 	mock.handlers[handlerKey("GET", "/osm/nsd/v1/ns_descriptors")] = nsDescHandler
 	mock.handlers[handlerKey("GET", "/osm/admin/v1/vim_accounts")] = vimAccHandler
+	mock.handlers[handlerKey("GET", "/osm/nslcm/v1/ns_instances_content")] = nsInstContentHandler
 
 	return mock
 }
@@ -80,5 +81,12 @@ func vimAccHandler(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: http.StatusOK,
 		Body:       stringReader(vimAccounts),
+	}, nil
+}
+
+func nsInstContentHandler(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       stringReader(nsInstancesContent),
 	}, nil
 }
