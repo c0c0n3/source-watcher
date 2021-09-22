@@ -50,7 +50,7 @@ func (m *authMan) acquireToken() (*sec.Token, error) {
 		Accept(MediaType.JSON),
 		JsonBody(m.creds),
 	).
-		SetHandler(ReadJsonResponse(&payload)).
+		SetHandler(ExpectSuccess(), ReadJsonResponse(&payload)).
 		RunWith(m.agent)
 
 	if err != nil {

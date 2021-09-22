@@ -79,7 +79,7 @@ func (c *Session) getJson(endpoint *url.URL, data interface{}) (
 		c.NbiAccessToken(),
 		Accept(MediaType.JSON),
 	).
-		SetHandler(ReadJsonResponse(data)).
+		SetHandler(ExpectSuccess(), ReadJsonResponse(data)).
 		RunWith(c.transport)
 }
 
@@ -93,7 +93,7 @@ func (c *Session) postJson(endpoint *url.URL, inData interface{},
 		JsonBody(inData),
 	)
 	if len(outData) > 0 {
-		req.SetHandler(ReadJsonResponse(outData[0]))
+		req.SetHandler(ExpectSuccess(), ReadJsonResponse(outData[0]))
 	}
 	return req.RunWith(c.transport)
 }

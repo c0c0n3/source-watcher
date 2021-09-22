@@ -86,6 +86,19 @@ func TestGetValidToken(t *testing.T) {
 	}
 }
 
+func TestGetTokenStopIfResponseNotOkay(t *testing.T) {
+	mock := &mockTransport{
+		replyWith: &http.Response{
+			StatusCode: 500,
+			Body:       stringReader(validNbiTokenPayload),
+		},
+	}
+	mngr, _ := NewAuthz(newConn(), usrCreds, mock.send)
+	if _, err := mngr.GetAccessToken(); err == nil {
+		t.Errorf("want: error; got: nil")
+	}
+}
+
 func TestGetTokenPayloadWithNoTokenFields(t *testing.T) {
 	mock := &mockTransport{
 		replyWith: &http.Response{
