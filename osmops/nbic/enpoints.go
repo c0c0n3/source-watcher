@@ -1,6 +1,7 @@
 package nbic
 
 import (
+	"fmt"
 	"net/url"
 
 	"github.com/fluxcd/source-watcher/osmops/util"
@@ -49,4 +50,11 @@ func (b Connection) VimAccounts() *url.URL {
 // NsInstances returns the URL to the NS instances content endpoint.
 func (b Connection) NsInstancesContent() *url.URL {
 	return b.buildUrl("/osm/nslcm/v1/ns_instances_content")
+}
+
+// NsInstancesAction returns the URL to the NS instances action endpoint
+// for the NS instance identified by the given ID.
+func (b Connection) NsInstancesAction(nsInstanceId string) *url.URL {
+	path := fmt.Sprintf("/osm/nslcm/v1/ns_instances/%s/action", nsInstanceId)
+	return b.buildUrl(path)
 }
