@@ -34,6 +34,9 @@ func newMockNbi() *mockNbi {
 	mock.handlers[handlerKey("GET", "/osm/nsd/v1/ns_descriptors")] = nsDescHandler
 	mock.handlers[handlerKey("GET", "/osm/admin/v1/vim_accounts")] = vimAccHandler
 	mock.handlers[handlerKey("GET", "/osm/nslcm/v1/ns_instances_content")] = nsInstContentHandler
+	mock.handlers[handlerKey("POST", "/osm/nslcm/v1/ns_instances_content")] = nsInstContentHandler
+	mock.handlers[handlerKey("POST",
+		"/osm/nslcm/v1/ns_instances/0335c32c-d28c-4d79-9b94-0ffa36326932/action")] = nsInstActionHandler
 
 	return mock
 }
@@ -85,8 +88,17 @@ func vimAccHandler(req *http.Request) (*http.Response, error) {
 }
 
 func nsInstContentHandler(req *http.Request) (*http.Response, error) {
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       stringReader(nsInstancesContent),
-	}, nil
+	if req.Method == "GET" {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       stringReader(nsInstancesContent),
+		}, nil
+	}
+
+	// POST
+	return &http.Response{StatusCode: http.StatusCreated}, nil
+}
+
+func nsInstActionHandler(req *http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: http.StatusAccepted}, nil
 }
