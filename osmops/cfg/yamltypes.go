@@ -100,23 +100,13 @@ var KduNsActionKind = struct {
 	u.StrEnum
 	KIND u.EnumIx
 }{
-	StrEnum: u.NewStrEnum("KduNsAction"),
+	StrEnum: u.NewStrEnum("NsInstance"),
 	KIND:    0,
 }
 
-var NsAction = struct {
-	u.StrEnum
-	CREATE, UPGRADE, DELETE u.EnumIx
-}{
-	StrEnum: u.NewStrEnum("create", "upgrade", "delete"),
-	CREATE:  0,
-	UPGRADE: 1,
-	DELETE:  2,
-}
-
 type Kdu struct {
-	Name  string      `yaml:"name"`
-	Model interface{} `yaml:"model"`
+	Name   string      `yaml:"name"`
+	Params interface{} `yaml:"params"`
 }
 
 func (d Kdu) Validate() error {
@@ -126,24 +116,26 @@ func (d Kdu) Validate() error {
 // KduNsAction holds the data in a YAML file that instructs OSM Ops to run
 // an NS action on a KDU.
 type KduNsAction struct {
-	Kind    string `yaml:"kind"`
-	Name    string `yaml:"name"`
-	Action  string `yaml:"action"`
-	VnfName string `yaml:"vnfName"`
-	Kdu     Kdu    `yaml:"kdu"`
+	Kind           string `yaml:"kind"`
+	Name           string `yaml:"name"`
+	Description    string `yaml:"description"`
+	NsdName        string `yaml:"nsdName"`
+	VnfName        string `yaml:"vnfName"`
+	VimAccountName string `yaml:"vimAccountName"`
+	Kdu            Kdu    `yaml:"kdu"`
 }
 
 // Validate KduNsAction data read from a YAML file.
 // An instance is valid if:
 // * Kind has a value of KduNsActionKind.
-// * Name, VnfName and Kdu.Name are not empty.
-// * Action is one of the NsAction constants---case doesn't matter.
+// * Name, NsdName, VnfName, VimAccountName and Kdu.Name are not empty.
 func (d KduNsAction) Validate() error {
 	return v.ValidateStruct(&d,
 		v.Field(&d.Kind, v.By(KduNsActionKind.Validate)), // (*)
 		v.Field(&d.Name, v.Required),
-		v.Field(&d.Action, v.By(NsAction.Validate)), // (*)
+		v.Field(&d.NsdName, v.Required),
 		v.Field(&d.VnfName, v.Required),
+		v.Field(&d.VimAccountName, v.Required),
 		v.Field(&d.Kdu),
 	)
 

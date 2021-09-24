@@ -1,6 +1,7 @@
-kind: KduNsAction
+kind: NsInstance
 name: t2
-action: upgrade
-vnfName: v2
+nsdName: d2
+vnfName: f2
+vimAccountName: v2
 kdu:
   name: k2

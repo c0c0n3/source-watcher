@@ -119,24 +119,28 @@ password: "yo! "
 
 func TestReadKduNsAction(t *testing.T) {
 	data := `
-kind: KduNsAction
+kind: NsInstance
 name: silly billy
-action: create
+description: look ma!
+nsdName: nascar
 vnfName: WTH
+vimAccountName: emacs rocks
 kdu:
   name: kudu buck
-  model:
+  params:
     p: 1
     q: 2
 `
 	want := &KduNsAction{
-		Kind:    "KduNsAction",
-		Name:    "silly billy",
-		Action:  "create",
-		VnfName: "WTH",
+		Kind:           "NsInstance",
+		Name:           "silly billy",
+		Description:    "look ma!",
+		NsdName:        "nascar",
+		VnfName:        "WTH",
+		VimAccountName: "emacs rocks",
 		Kdu: Kdu{
 			Name: "kudu buck",
-			Model: map[interface{}]interface{}{
+			Params: map[interface{}]interface{}{
 				"p": 1,
 				"q": 2,
 			},
@@ -156,8 +160,10 @@ func TestReadInvalidKduNsAction(t *testing.T) {
 	data := `
 kind: invalid!
 name: silly billy
-action: create
+description: look ma!
+nsdName: nascar
 vnfName: WTH
+vimAccountName: emacs rocks
 kdu:
   name: kudu buck
   model:
