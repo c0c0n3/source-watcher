@@ -2,6 +2,8 @@ package nbic
 
 import (
 	"fmt"
+
+	u "github.com/fluxcd/source-watcher/osmops/util"
 )
 
 type nsInstanceView struct { // only the response fields we care about.
@@ -174,11 +176,21 @@ func (c *Session) createNsInstance(data *NsInstanceContent) error {
 	return err
 }
 
+var nsAction = struct {
+	u.StrEnum
+	CREATE, UPGRADE, DELETE u.EnumIx
+}{
+	StrEnum: u.NewStrEnum("create", "upgrade", "delete"),
+	CREATE:  0,
+	UPGRADE: 1,
+	DELETE:  2,
+}
+
 func toNsInstanceContentActionDto(nsId string, data *NsInstanceContent) *nsInstanceContentActionDto {
 	return &nsInstanceContentActionDto{
 		MemberVnfIndex:  data.VnfName,
 		KduName:         data.KduName,
-		Primitive:       "upgrade",
+		Primitive:       nsAction.LabelOf(nsAction.UPGRADE),
 		PrimitiveParams: data.KduParams,
 	}
 }
