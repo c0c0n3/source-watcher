@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestFromBytesErrorOnInvalidYaml(t *testing.T) {
+	data := []byte(`x: { y`)
+	if _, err := readOpsConfig(data); err == nil {
+		t.Errorf("want: error; got: nil")
+	}
+}
+
 func TestReadOpsConfig(t *testing.T) {
 	data := `
 targetDir: deploy/ment
