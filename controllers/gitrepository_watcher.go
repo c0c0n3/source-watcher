@@ -31,8 +31,7 @@ import (
 
 	"github.com/fluxcd/pkg/untar"
 	sourcev1 "github.com/fluxcd/source-controller/api/v1beta1"
-
-	"github.com/fluxcd/source-watcher/osmops/cmd"
+	"github.com/fluxcd/source-watcher/osmops/engine"
 )
 
 // GitRepositoryWatcher watches GitRepository objects for revision changes
@@ -70,7 +69,7 @@ func (r *GitRepositoryWatcher) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	log.Info(summary)
 
-	cmd.OsmReconcile(ctx, tmpDir)
+	engine.OsmReconcile(ctx, tmpDir)
 	// // list artifact content
 	// files, err := ioutil.ReadDir(tmpDir)
 	// if err != nil {
