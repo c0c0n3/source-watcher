@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/fluxcd/source-watcher/osmops/cfg"
 	u "github.com/fluxcd/source-watcher/osmops/util"
 )
 
@@ -96,11 +97,12 @@ func TestReconcileProcessOsmGitOpsFiles(t *testing.T) {
 		}
 	}
 
-	if data := mockNbic.dataFor("k3"); data == nil {
+	if !mockNbic.hasProcessedKdu("k3") {
 		t.Errorf("want: process k3; got: not processed")
 	} else {
-		if data.KduParams == nil {
-			t.Errorf("want: params; got: nil")
+		got := mockNbic.lookupParam("k3", "replicaCount")
+		if got != "3" {
+			t.Errorf(`want: "3"; got: %s`, got)
 		}
 	}
 
@@ -115,5 +117,17 @@ func TestReconcileProcessOsmGitOpsFiles(t *testing.T) {
 	// k2: simulated processing error, see mockCreateOrUpdate
 	if got := logger.sortErrorFileNames(); !reflect.DeepEqual(want, got) {
 		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
+func TestNewNbicFailOnInvalidHostAndPort(t *testing.T) {
+	config := &cfg.OsmConnection{
+		Hostname: "missing.port", // never happens b/c of yaml validation
+		User:     "u",
+		Password: "*",
+		Project:  "p",
+	}
+	if _, err := newNbic(config); err == nil {
+		t.Errorf("want: error; got: nil")
 	}
 }

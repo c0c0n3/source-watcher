@@ -144,3 +144,14 @@ func (m *mockCreateOrUpdate) dataFor(kduName string) *nbic.NsInstanceContent {
 	}
 	return nil
 }
+
+func (m *mockCreateOrUpdate) lookupParam(kduName string, paramName string) interface{} {
+	if data := m.dataFor(kduName); data != nil {
+		if ps, ok := data.KduParams.(map[interface{}]interface{}); ok {
+			if v, ok := ps[paramName]; ok {
+				return v
+			}
+		}
+	}
+	return nil
+}

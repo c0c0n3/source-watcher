@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	jsoniter "github.com/json-iterator/go"
 
 	"github.com/fluxcd/source-watcher/osmops/cfg"
 	"github.com/fluxcd/source-watcher/osmops/nbic"
@@ -17,8 +16,8 @@ type Engine struct {
 	nbic      nbic.Workflow
 }
 
-func newNbic(opsConfig *cfg.Store) (nbic.Workflow, error) {
-	hp, err := u.ParseHostAndPort(opsConfig.OsmConnection().Hostname)
+func newNbic(opsConfig *cfg.OsmConnection) (nbic.Workflow, error) {
+	hp, err := u.ParseHostAndPort(opsConfig.Hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +27,9 @@ func newNbic(opsConfig *cfg.Store) (nbic.Workflow, error) {
 		Secure:  false,
 	}
 	usrCreds := nbic.UserCredentials{
-		Username: opsConfig.OsmConnection().User,
-		Password: opsConfig.OsmConnection().Password,
-		Project:  opsConfig.OsmConnection().Project,
+		Username: opsConfig.User,
+		Password: opsConfig.Password,
+		Project:  opsConfig.Project,
 	}
 
 	return nbic.New(conn, usrCreds)
@@ -47,7 +46,7 @@ func newProcessor(ctx context.Context, repoRootDir string) (*Engine, error) {
 		return nil, err
 	}
 
-	client, err := newNbic(store)
+	client, err := newNbic(store.OsmConnection())
 	if err != nil {
 		return nil, err
 	}
@@ -71,22 +70,6 @@ func (p *Engine) repoScanner() *cfg.KduNsActionRepoScanner {
 	return cfg.NewKduNsActionRepoScanner(p.opsConfig)
 }
 
-func kduParamsToJson(file *cfg.KduNsActionFile) ([]byte, error) {
-	if file.Content.Kdu.Params == nil {
-		return nil, nil
-	}
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary // (*)
-	return json.Marshal(file.Content.Kdu.Params)
-
-	// (*) can't use Go's built-in json lib since it will blow up w/
-	//    json: unsupported type: map[interface {}]interface{}
-	// In fact, the YAML lib deserialises the Params block into a
-	//    map[interface {}]interface{}
-	// which the built-in json doesn't know how to handle.
-	// See:
-	// - https://stackoverflow.com/questions/35377477
-}
-
 const (
 	processingMsg    = "processing"
 	fileLogKey       = "file"
@@ -98,11 +81,6 @@ const (
 func (p *Engine) Process(file *cfg.KduNsActionFile) error {
 	p.log().Info(processingMsg, fileLogKey, file.FilePath.Value())
 
-	kduParams, err := kduParamsToJson(file) // TODO bug! zap this!!
-	if err != nil {
-		return err
-	}
-
 	data := nbic.NsInstanceContent{
 		Name:           file.Content.Name,
 		Description:    file.Content.Description,
@@ -110,7 +88,7 @@ func (p *Engine) Process(file *cfg.KduNsActionFile) error {
 		VnfName:        file.Content.VnfName,
 		VimAccountName: file.Content.VimAccountName,
 		KduName:        file.Content.Kdu.Name,
-		KduParams:      kduParams,
+		KduParams:      file.Content.Kdu.Params,
 	}
 	return p.nbic.CreateOrUpdateNsInstance(&data)
 }
