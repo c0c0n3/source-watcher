@@ -69,7 +69,10 @@ func (r *GitRepositoryWatcher) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	log.Info(summary)
 
-	engine.OsmReconcile(ctx, tmpDir)
+	if engine, err := engine.New(ctx, tmpDir); err == nil {
+		engine.Reconcile()
+	} // no need to log engine init error, engine.New already does that.
+
 	// // list artifact content
 	// files, err := ioutil.ReadDir(tmpDir)
 	// if err != nil {

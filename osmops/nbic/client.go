@@ -11,6 +11,25 @@ import (
 	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
 )
 
+// Workflow defines functions to carry out high-level tasks, usually involving
+// several NBI calls.
+type Workflow interface {
+	// CreateOrUpdateNsInstance creates or updates an NS instance in OSM
+	// through NBI.
+	//
+	// If there's no instance with the specified name, then a new one gets
+	// created. Otherwise, it's an update. Notice OSM allows duplicate instance
+	// names (bug?), hence it's not safe to update an instance given it's
+	// name---which instance to update if there's more than one with the
+	// same name? So CreateOrUpdateNsInstance errors out if the given name
+	// is tied to more than one instance.
+	//
+	// For now we only support creating or updating KNFs. For a create or
+	// update operation to work, the target KNF must've been "on-boarded"
+	// in OSM already. So there must be, in OSM, a NSD and VNFD for it.
+	CreateOrUpdateNsInstance(data *NsInstanceContent) error
+}
+
 const REQUEST_TIMEOUT_SECONDS = 600
 
 func newHttpClient() *http.Client {

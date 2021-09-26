@@ -11,13 +11,13 @@ import (
 	u "github.com/fluxcd/source-watcher/osmops/util"
 )
 
-type processor struct {
+type Engine struct {
 	ctx       context.Context
 	opsConfig *cfg.Store
-	nbic      *nbic.Session
+	nbic      nbic.Workflow
 }
 
-func newNbic(opsConfig *cfg.Store) (*nbic.Session, error) {
+func newNbic(opsConfig *cfg.Store) (nbic.Workflow, error) {
 	hp, err := u.ParseHostAndPort(opsConfig.OsmConnection().Hostname)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func newNbic(opsConfig *cfg.Store) (*nbic.Session, error) {
 	return nbic.New(conn, usrCreds)
 }
 
-func newProcessor(ctx context.Context, repoRootDir string) (*processor, error) {
+func newProcessor(ctx context.Context, repoRootDir string) (*Engine, error) {
 	rootDir, err := u.ParseAbsPath(repoRootDir)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func newProcessor(ctx context.Context, repoRootDir string) (*processor, error) {
 		return nil, err
 	}
 
-	return &processor{
+	return &Engine{
 		ctx:       ctx,
 		opsConfig: store,
 		nbic:      client,
@@ -63,11 +63,11 @@ func log(ctx context.Context) logr.Logger {
 	return logr.FromContext(ctx)
 }
 
-func (p *processor) log() logr.Logger {
+func (p *Engine) log() logr.Logger {
 	return log(p.ctx)
 }
 
-func (p *processor) repoScanner() *cfg.KduNsActionRepoScanner {
+func (p *Engine) repoScanner() *cfg.KduNsActionRepoScanner {
 	return cfg.NewKduNsActionRepoScanner(p.opsConfig)
 }
 
@@ -87,10 +87,18 @@ func kduParamsToJson(file *cfg.KduNsActionFile) ([]byte, error) {
 	// - https://stackoverflow.com/questions/35377477
 }
 
-func (p *processor) Process(file *cfg.KduNsActionFile) error {
-	p.log().Info("Processing", "file", file.FilePath.Value())
+const (
+	processingMsg    = "processing"
+	fileLogKey       = "file"
+	engineInitErrMsg = "can't initialize reconcile engine"
+	processingErrMsg = "processing errors"
+	errorLogKey      = "error"
+)
 
-	kduParams, err := kduParamsToJson(file)
+func (p *Engine) Process(file *cfg.KduNsActionFile) error {
+	p.log().Info(processingMsg, fileLogKey, file.FilePath.Value())
+
+	kduParams, err := kduParamsToJson(file) // TODO bug! zap this!!
 	if err != nil {
 		return err
 	}
@@ -107,21 +115,25 @@ func (p *processor) Process(file *cfg.KduNsActionFile) error {
 	return p.nbic.CreateOrUpdateNsInstance(&data)
 }
 
-func (p *processor) run() []error {
-	return p.repoScanner().Visit(p)
-}
-
-// TODO docs!
-func OsmReconcile(ctx context.Context, repoRootDir string) {
+// New instantiates an Engine to reconcile the state of the OSM deployment
+// with that declared in the OSM GitOps files found in the specified repo.
+func New(ctx context.Context, repoRootDir string) (*Engine, error) {
 	engine, err := newProcessor(ctx, repoRootDir)
 	if err != nil {
-		log(ctx).Error(err, "can't initialize reconcile engine")
+		log(ctx).Error(err, engineInitErrMsg)
+		return nil, err
 	}
+	return engine, nil
+}
 
-	errors := engine.run()
+// Reconcile looks for OSM GitOps files in the repo and, for each file
+// found, it calls OSM NBI to reach the deployment state declared in the
+// file.
+func (p *Engine) Reconcile() {
+	errors := p.repoScanner().Visit(p)
 	if len(errors) > 0 {
 		for k, e := range errors {
-			engine.log().Error(e, "processing errors", "error", k)
+			p.log().Error(e, processingErrMsg, errorLogKey, k)
 		}
 	}
 }
