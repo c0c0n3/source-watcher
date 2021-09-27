@@ -1,4 +1,4 @@
 targetDir: _deployment_
 fileExtensions:
   - .ops.yaml
-connectionFile: _deployment_/secret.yaml
+connectionFile: /tmp/osm_ops_secret.yaml
