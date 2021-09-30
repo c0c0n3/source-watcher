@@ -17,7 +17,7 @@ Install
 
 Keep in mind you're going to need a beefy box to run this demo smoothly.
 With lots of effort and patience, I've managed to run it on my 4 core, 8
-GB RAM laptop but my guess is that you'd need at box with at least double
+GB RAM laptop but my guess is that you'd need a box with at least double
 that horse power.
 
 
@@ -27,8 +27,8 @@ Open a terminal in the repo root dir, then
 
 ```bash
 $ nix-shell
-$ flux check --pre
 $ kind create cluster --name dev
+$ flux check --pre
 $ flux install \
     --namespace=flux-system \
     --network-policy=false \

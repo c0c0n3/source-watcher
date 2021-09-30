@@ -142,3 +142,20 @@ func (d KduNsAction) Validate() error {
 	// (*) ideally it'd be the In rule, but I couldn't get it right, if
 	// there's no Kind, validation passes! Ditto for the action.
 }
+
+// TODO. Generic handling of OSM files.
+// We could actually do much more than KDU create/upgrade and maybe we
+// won't even need to write custom YAML wrappers and handle OSM files
+// in a more generic way. In fact, we could potentially generate Go
+// structs for all OSM "models":
+//
+// - https://osm.etsi.org/gitlab/osm/im/-/tree/master
+//
+// using e.g.
+//
+// - https://github.com/openconfig/ygot
+//
+// We could implement a code-gen pipeline similar to the one the OSM guys
+// have for Python, except for Go:
+//
+// - https://osm.etsi.org/gitlab/osm/im/-/blob/master/Makefile
