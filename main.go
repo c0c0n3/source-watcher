@@ -88,4 +88,7 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+
+	// TODO. Add health and readiness endpoints? See:
+	// https://github.com/kubernetes-sigs/kubebuilder/blob/master/docs/book/src/multiversion-tutorial/testdata/project/main.go#L125
 }
