@@ -7,4 +7,4 @@ vimAccountName: mylocation1
 kdu:
   name: ldap
   params:
-    replicaCount: "2"
+    replicaCount: "1"
