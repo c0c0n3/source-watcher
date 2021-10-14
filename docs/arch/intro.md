@@ -44,8 +44,8 @@ through version-controlled text files hosted in an online Git repository.
 Each file declares a desired instantiation and runtime configuration
 for some of the services in a specified OSM cluster. Collectively,
 the files at a given Git revision describe the deployment state of
-the these services at a certain point in time. OSM Ops monitors the
-Git repository in order to automatically reconcile the desired deployment
+these services at a certain point in time. OSM Ops monitors the Git
+repository in order to automatically reconcile the desired deployment
 state with the actual live state of the OSM cluster. OSM Ops is implemented
 as a [Kubernetes][k8s] operator that plugs into the [FluxCD][flux]
 framework in order to leverage the rich Kubernetes/FluxCD GitOps
@@ -56,7 +56,55 @@ declarations.
 
 ![Architecture context diagram.][dia.ctx]
 
-**TODO**: narrative
+From the system administrator's perspective, the GitOps workflow is
+as follows. She initially installs, through OSM packages, the deployment
+descriptors (typically NSD, VNFD and KDU) for each KNF that she would
+like to operate. Each KDU references a Helm chart describing the Kubernetes
+resources (service, deployment, etc.) which constitute a KNF. To instantiate
+a KNF, OSM has to be able to fetch the corresponding Helm chart. Usually,
+Helm charts are maintained in an online repository that the system
+administrator takes care of connecting to OSM—e.g. by adding the repository
+to the OSM database with the `osm` command line tool. Likewise, since
+Helm charts, in turn, reference container images, the system administrator
+has to make sure that all the images required for her KNFs can be
+downloaded from within the OSM cluster. The usual arrangement here
+is that a container registry service provides the needed images to
+OSM. Again, the system administrator takes care of this initial setup
+step. The diagram exemplifies these initial installation and setup
+steps with two sets of OSM deployment descriptors, one for OpenLDAP
+and the other for TensorFlow, each referencing their respective Helm
+charts in an online Git repository and, in turn, the charts reference
+container images in a public Docker registry.
+
+After provisioning KNF descriptors, the system administrator can then
+edit text files to declare the desired deployment state of her KNFs.
+Soon after she commits these files to the OSM Ops descriptor repository,
+a background reconciliation process is set in motion that ultimately
+results in NS instances running in the OSM cluster with the desired
+deployment configuration. The diagram depicts a scenario where the
+system administrator commits a new revision, `v6`, to the OSM Ops
+descriptor repository. The `v6` files collectively declare that the
+OSM cluster should run an OpenLDAP KNF with three replicas and a
+TensorFlow KNF with one replica. As hinted by the diagram, the last
+time the reconciliation process ran, it realised the deployment configuration
+declared in revision `v5` which demanded an OpenLDAP KNF with two
+replicas. Therefore to realise the `v6` configuration, the outcome
+of the reconciliation process should be that another replica is added
+to the existing OpenLDAP KNF and a brand new TensorFlow KNF is created
+with one replica.
+
+We now turn our attention to the reconciliation process that runs
+behind the scenes. FluxCD detects any changes to the OSM Ops descriptor
+repository and forwards new revisions to OSM Ops for processing. On
+receiving a new revision, OSM Ops determines which KNFs to create
+and which to update. It then calls the OSM cluster manager to actually
+create or update the KNFs declared in that revision. In turn, the OSM
+cluster manager orchestrates calls to Helm and Kubernetes to fulfill
+the requested create and update operations which usually also involve
+fetching Helm charts from a repository and pulling container images.
+The diagram illustrates the reconciliation process for revision `v6`.
+(Bear in mind, the diagram shows a conceptual, high-level message
+flow, the next section provides a more accurate description.)
 
 
 ### Implementation overview
@@ -143,7 +191,7 @@ words are in order.
   future—ref merger plans
 - FluxCD has better docs about extending it with custom functionality
   which is what in the end tipped the balance in its favour
-- Go was a natural PL choice b/c of FluxCD and K8s libs are both
+- Go was a natural PL choice b/c FluxCD and K8s libs are both
   written in Go
 
 

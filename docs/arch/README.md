@@ -11,9 +11,9 @@ code with new functionality.
 
 ### Document status
 
-**Draft**. Even though this document is a first draft and many sections
-need to be expanded, the included material should be enough to gain
-an understanding of the OSM Ops architecture.
+**Work in progress**. Even though this document is a first draft and
+many sections need to be written, the included material should be
+enough to gain a basic understanding of the OSM Ops architecture.
 
 
 ### Prerequisites
@@ -52,4 +52,3 @@ MANO.
 [intro]: ./intro.md
 [qa]: ./qa.md
 [requirements]: ./requirements.md
-￼
