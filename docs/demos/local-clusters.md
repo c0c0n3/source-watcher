@@ -133,7 +133,7 @@ Docker registry:
 
 ```bash
 $ make docker-build
-$ kind load docker-image controller:latest --name dev
+$ kind load docker-image ghcr.io/c0c0n3/osmops:latest --name dev
 ```
 
 We need to tell OSM Ops how to connect to the OSM NBI. Create an
