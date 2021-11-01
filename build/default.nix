@@ -36,6 +36,9 @@ in rec {
     inherit gopls delve gopkgs go-outline gomodifytags impl gotests;
     inherit go-tools; # = staticcheck
     # missing from nixpkgs: goplay; leaving this out
+
+    # Only needed to connect to the Malaga demo cluster.
+    inherit openvpn;
   };
 
   devShell = pinnedPkgs.mkShell {
