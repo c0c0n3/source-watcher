@@ -18,6 +18,7 @@ import (
 	v "github.com/go-ozzo/ozzo-validation"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
 // OpsConfig holds the configuration data needed to scan a repo to find
@@ -54,11 +55,11 @@ func (d OpsConfig) Validate() error {
 		if len(s) == 0 {
 			return nil
 		}
-		return u.IsStringPath(value)
+		return file.IsStringPath(value)
 	}
 	return v.ValidateStruct(&d,
 		v.Field(&d.TargetDir, v.By(validTargetDir)),
-		v.Field(&d.ConnectionFile, v.By(u.IsStringPath)),
+		v.Field(&d.ConnectionFile, v.By(file.IsStringPath)),
 	)
 
 	// (*) the latest ozzo-validation (GH/master) comes w/ conditional

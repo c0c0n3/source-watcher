@@ -8,6 +8,7 @@ import (
 	"github.com/fluxcd/source-watcher/osmops/cfg"
 	"github.com/fluxcd/source-watcher/osmops/nbic"
 	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
 type Engine struct {
@@ -36,7 +37,7 @@ func newNbic(opsConfig *cfg.OsmConnection) (nbic.Workflow, error) {
 }
 
 func newProcessor(ctx context.Context, repoRootDir string) (*Engine, error) {
-	rootDir, err := u.ParseAbsPath(repoRootDir)
+	rootDir, err := file.ParseAbsPath(repoRootDir)
 	if err != nil {
 		return nil, err
 	}

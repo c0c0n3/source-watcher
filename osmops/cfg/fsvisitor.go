@@ -11,11 +11,12 @@ import (
 	"strings"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
 // KduNsActionFile is the data passed to the OSM GitOps file visitor.
 type KduNsActionFile struct {
-	FilePath u.AbsPath
+	FilePath file.AbsPath
 	Content  *KduNsAction
 }
 
@@ -45,10 +46,10 @@ func (e VisitError) Unwrap() error { return e.Err }
 // KduNsActionRepoScanner has methods to let visitors process OSM GitOps files
 // found while traversing the target directory.
 type KduNsActionRepoScanner struct {
-	targetDir u.AbsPath
+	targetDir file.AbsPath
 	fileExt   []u.NonEmptyStr
-	parsePath func(string) (u.AbsPath, error) // (*)
-	readFile  func(string) ([]byte, error)    // (*)
+	parsePath func(string) (file.AbsPath, error) // (*)
+	readFile  func(string) ([]byte, error)       // (*)
 
 	// (*) added for testability, so we can sort of mock stuff
 }
@@ -59,7 +60,7 @@ func NewKduNsActionRepoScanner(store *Store) *KduNsActionRepoScanner {
 	return &KduNsActionRepoScanner{
 		targetDir: store.RepoTargetDirectory(),
 		fileExt:   store.OpsFileExtensions(),
-		parsePath: u.ParseAbsPath,
+		parsePath: file.ParseAbsPath,
 		readFile:  ioutil.ReadFile,
 	}
 }

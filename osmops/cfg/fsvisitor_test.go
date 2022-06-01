@@ -9,7 +9,7 @@ import (
 	"sort"
 	"testing"
 
-	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
 type processor struct {
@@ -68,8 +68,8 @@ func TestVisit(t *testing.T) {
 
 func TestVisitFileParsePathError(t *testing.T) {
 	scanner := buildScanner(t)
-	scanner.parsePath = func(path string) (u.AbsPath, error) {
-		return u.AbsPath{}, fmt.Errorf("can't parse path: %v", path)
+	scanner.parsePath = func(path string) (file.AbsPath, error) {
+		return file.AbsPath{}, fmt.Errorf("can't parse path: %v", path)
 	}
 	visitor := &processor{}
 

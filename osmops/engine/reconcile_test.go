@@ -9,16 +9,16 @@ import (
 	"testing"
 
 	"github.com/fluxcd/source-watcher/osmops/cfg"
-	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
-func findTestDataDir(dirIndex int) u.AbsPath {
+func findTestDataDir(dirIndex int) file.AbsPath {
 	_, thisFileName, _, _ := runtime.Caller(1)
 	enclosingDir := filepath.Dir(thisFileName)
 	testDataDirName := fmt.Sprintf("test_%d", dirIndex)
 	testDataDir := filepath.Join(enclosingDir, "reconcile_test_dir",
 		testDataDirName)
-	p, _ := u.ParseAbsPath(testDataDir)
+	p, _ := file.ParseAbsPath(testDataDir)
 
 	return p
 }
