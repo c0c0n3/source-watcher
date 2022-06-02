@@ -1,7 +1,9 @@
 package file
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -74,6 +76,28 @@ func TestNonExistentTargetDir(t *testing.T) {
 	}
 }
 
+func TestVisitCollectWalkError(t *testing.T) {
+	targetDir := findTestDataDir(1)
+	scanner := NewTreeScanner(targetDir).(*scanner)
+	es := []error{}
+
+	fn := scanner.visitAllAndCollectErrors(
+		func(n TreeNode) error {
+			return nil
+		}, &es)
+	err := fmt.Errorf("I/O error while scanning the dir tree.")
+	var info fs.FileInfo
+	fn("/pa/th", info, err)
+
+	if len(es) != 1 {
+		t.Errorf("want: one error; got: %v", es)
+	}
+	want := &VisitError{AbsPath: "/pa/th", Err: err}
+	if got, ok := es[0].(*VisitError); !ok || want.Error() != got.Error() {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
 func TestCollectAllErrors(t *testing.T) {
 	targetDir := findTestDataDir(2)
 	scanner := NewTreeScanner(targetDir)
@@ -132,4 +156,21 @@ func TestVisitDirTree(t *testing.T) {
 		"f1",
 	}
 	assertVisitedPaths(t, 2, want)
+}
+
+func TestVisitErrorStringRepr(t *testing.T) {
+	e := VisitError{AbsPath: "p", Err: fmt.Errorf("e")}
+	want := "p: e"
+	if e.Error() != want {
+		t.Errorf("want: %s; got: %s", want, e)
+	}
+}
+
+func TestVisitErrorUnwrapping(t *testing.T) {
+	cause := fmt.Errorf("cause")
+	e := VisitError{AbsPath: "p", Err: cause}
+	got := errors.Unwrap(e)
+	if cause != got {
+		t.Errorf("want: %v; got: %v", cause, got)
+	}
 }

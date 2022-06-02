@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/fluxcd/source-watcher/osmops/cfg"
 	"github.com/fluxcd/source-watcher/osmops/nbic"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 	"github.com/go-logr/logr"
 )
 
@@ -101,7 +101,7 @@ func (c *logCollector) sortErrorFileNames() []string {
 	names := []string{}
 	for _, e := range c.entries {
 		if e.msg == processingErrMsg {
-			if err, ok := e.err.(*cfg.VisitError); ok {
+			if err, ok := e.err.(*file.VisitError); ok {
 				name := filepath.Base(err.AbsPath)
 				names = append(names, name)
 			}

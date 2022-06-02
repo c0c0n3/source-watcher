@@ -4,10 +4,8 @@
 package cfg
 
 import (
-	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"path/filepath"
 	"strings"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
@@ -28,28 +26,12 @@ type KduNsActionProcessor interface {
 	Process(file *KduNsActionFile) error
 }
 
-// VisitError wraps any error that happened while traversing the target
-// directory with an additional path to indicate where the error happened.
-type VisitError struct {
-	AbsPath string
-	Err     error
-}
-
-// Error implements the standard error interface.
-func (e VisitError) Error() string {
-	return fmt.Sprintf("%s: %v", e.AbsPath, e.Err)
-}
-
-// Unwrap implements Go's customary error unwrapping.
-func (e VisitError) Unwrap() error { return e.Err }
-
 // KduNsActionRepoScanner has methods to let visitors process OSM GitOps files
 // found while traversing the target directory.
 type KduNsActionRepoScanner struct {
 	targetDir file.AbsPath
 	fileExt   []u.NonEmptyStr
-	parsePath func(string) (file.AbsPath, error) // (*)
-	readFile  func(string) ([]byte, error)       // (*)
+	readFile  func(string) ([]byte, error) // (*)
 
 	// (*) added for testability, so we can sort of mock stuff
 }
@@ -60,7 +42,6 @@ func NewKduNsActionRepoScanner(store *Store) *KduNsActionRepoScanner {
 	return &KduNsActionRepoScanner{
 		targetDir: store.RepoTargetDirectory(),
 		fileExt:   store.OpsFileExtensions(),
-		parsePath: file.ParseAbsPath,
 		readFile:  ioutil.ReadFile,
 	}
 }
@@ -73,35 +54,13 @@ func NewKduNsActionRepoScanner(store *Store) *KduNsActionRepoScanner {
 // VisitErrors. Ditto for I/O errors that happen when reading or validating
 // a Git Ops file as well as any error returned by the visitor.
 func (k *KduNsActionRepoScanner) Visit(visitor KduNsActionProcessor) []error {
-	es := []error{}
-	filepath.Walk(k.targetDir.Value(), // (*)
-		k.visitAllAndCollectErrors(visitor, &es))
-	return es
-
-	// (*) b/c targetDir is absolute, so is the path parameter passed to
-	// the lambda returned by visitAllAndCollectErrors---see Walk docs.
-}
-
-func (k *KduNsActionRepoScanner) visitAllAndCollectErrors(
-	visitor KduNsActionProcessor, acc *[]error) filepath.WalkFunc {
-	return func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			*acc = appendVisitError(path, err, *acc)
+	scanner := file.NewTreeScanner(k.targetDir)
+	return scanner.Visit(func(node file.TreeNode) error {
+		if !k.isGitOpsFile(node.FsMeta) {
 			return nil
 		}
-		if !k.isGitOpsFile(info) {
-			return nil
-		}
-		if err := k.visitFile(path, visitor); err != nil {
-			*acc = appendVisitError(path, err, *acc)
-		}
-		return nil
-	}
-}
-
-func appendVisitError(path string, err error, errors []error) []error {
-	visitError := &VisitError{AbsPath: path, Err: err}
-	return append(errors, visitError)
+		return k.visitFile(node.NodePath, visitor)
+	})
 }
 
 func (k *KduNsActionRepoScanner) isGitOpsFile(info fs.FileInfo) bool {
@@ -116,18 +75,12 @@ func (k *KduNsActionRepoScanner) isGitOpsFile(info fs.FileInfo) bool {
 	return false
 }
 
-func (k *KduNsActionRepoScanner) visitFile(path string,
+func (k *KduNsActionRepoScanner) visitFile(absPath file.AbsPath,
 	visitor KduNsActionProcessor) error {
 	var err error
-	file := &KduNsActionFile{}
+	file := &KduNsActionFile{FilePath: absPath}
 
-	absPath, err := k.parsePath(path)
-	if err != nil { // (*)
-		return err
-	}
-	file.FilePath = absPath
-
-	yaml, err := k.readFile(path)
+	yaml, err := k.readFile(absPath.Value())
 	if err != nil {
 		return err
 	}
@@ -138,7 +91,4 @@ func (k *KduNsActionRepoScanner) visitFile(path string,
 	file.Content = content
 
 	return visitor.Process(file)
-
-	// (*) paranoia, it should never happen, path is already absolute
-	// since targetDir is---see Walk docs.
 }
