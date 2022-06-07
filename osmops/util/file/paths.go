@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -59,4 +60,33 @@ func (d AbsPath) IsDir() error {
 		}
 	}
 	return nil
+}
+
+// ListPaths collects, recursively, the paths of all the directories and
+// files inside dirPath. Each collected path is relative to dirPath, so
+// for example, if dirPath = "b" and f is a file at "b/d/f", then "d/f"
+// gets returned. ListPaths sorts the returned paths in alphabetical
+// order.
+func ListPaths(dirPath string) ([]string, []error) {
+	visitedPaths := []string{}
+	errs := []error{}
+
+	targetDir, err := ParseAbsPath(dirPath)
+	if err != nil {
+		errs = append(errs, err)
+		return visitedPaths, errs
+	}
+
+	scanner := NewTreeScanner(targetDir)
+	es := scanner.Visit(func(node TreeNode) error {
+		if node.RelPath != "" {
+			visitedPaths = append(visitedPaths, node.RelPath)
+		}
+		return nil
+	})
+
+	errs = append(errs, es...)
+	sort.Strings(visitedPaths)
+
+	return visitedPaths, errs
 }

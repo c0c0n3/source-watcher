@@ -3,6 +3,7 @@ package file
 import (
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -92,5 +93,36 @@ func TestIsDir(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func assertListPaths(t *testing.T, dirIndex int, want []string) {
+	got, err := ListPaths(findTestDataDir(dirIndex).Value())
+	if len(err) != 0 {
+		t.Fatalf("want: %v; got: %v", want, err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
+func TestListPathsOfFlatDir(t *testing.T) {
+	want := []string{"f1", "f2"}
+	assertListPaths(t, 1, want)
+}
+
+func TestListPathsOfDirTree(t *testing.T) {
+	want := []string{
+		"d1", "d1/f2", "d1/f3",
+		"d2", "d2/d3", "d2/d3/f6", "d2/f4", "d2/f5",
+		"f1",
+	}
+	assertListPaths(t, 2, want)
+}
+
+func TestListPathsErrorOnInvalidTargetDir(t *testing.T) {
+	got, err := ListPaths("")
+	if err == nil {
+		t.Errorf("want error; got: %v", got)
 	}
 }

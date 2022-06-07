@@ -87,8 +87,8 @@ func (s *scanner) visitAllAndCollectErrors(
 		}
 		node := TreeNode{
 			RootPath: s.targetDir,
-			NodePath: AbsPath{data: path},                       // see note above about targetDir
-			RelPath:  extractRelPath(s.targetDir.Value(), path), //strings.TrimPrefix(path, s.targetDir.Value()),
+			NodePath: AbsPath{data: path}, // see note above about targetDir
+			RelPath:  extractRelPath(s.targetDir.Value(), path),
 			FsMeta:   info,
 		}
 		if err := visit(node); err != nil {
