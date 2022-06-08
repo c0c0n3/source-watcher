@@ -1,8 +1,6 @@
 package tgz
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"io"
 	"io/fs"
 	"os"
@@ -37,57 +35,40 @@ func ExtractTarball(tarballPath file.AbsPath, destDirPath string) error {
 	if err != nil {
 		return err
 	}
-	defer source.Close()
 
-	deflate, err := gzip.NewReader(source)
+	reader, err := NewReader(source)
 	if err != nil {
 		return err
 	}
-	defer deflate.Close()
 
-	archive := tar.NewReader(deflate)
-	return extractEntries(archive, destDirPath)
+	return reader.IterateEntries(makeEntryReader(destDirPath))
 }
 
-func extractEntries(archive *tar.Reader, destDirPath string) error {
-	for {
-		header, err := archive.Next()
-		if err == io.EOF {
-			return nil
+func makeEntryReader(destDirPath string) EntryReader {
+	return func(archivePath string, fi os.FileInfo, content io.Reader) error {
+		targetPath := filepath.Join(destDirPath, archivePath)
+		if err := ensureDirs(fi, targetPath); err != nil {
+			return err
 		}
+
+		fd, err := os.OpenFile(targetPath,
+			os.O_CREATE|os.O_TRUNC|os.O_WRONLY, fi.Mode())
 		if err != nil {
 			return err
 		}
-		err = extractEntry(archive, header, destDirPath)
+		defer fd.Close()
+
+		_, err = io.Copy(fd, content)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 }
 
-func extractEntry(ar *tar.Reader, hdr *tar.Header, destDirPath string) error {
-	targetPath := filepath.Join(destDirPath, hdr.Name)
-	if err := ensureDirs(hdr, targetPath); err != nil {
-		return err
-	}
-
-	fd, err := os.OpenFile(targetPath,
-		os.O_CREATE|os.O_TRUNC|os.O_WRONLY, hdr.FileInfo().Mode())
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
-	_, err = io.Copy(fd, ar)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func ensureDirs(hdr *tar.Header, targetPath string) error {
-	if hdr.FileInfo().IsDir() {
-		return os.MkdirAll(targetPath, hdr.FileInfo().Mode())
+func ensureDirs(fi os.FileInfo, targetPath string) error {
+	if fi.IsDir() {
+		return os.MkdirAll(targetPath, fi.Mode())
 	}
 	enclosingDir := filepath.Dir(targetPath)
 	return os.MkdirAll(enclosingDir, fs.ModePerm|fs.ModeDir)

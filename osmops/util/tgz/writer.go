@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -94,7 +93,7 @@ func (t *tarball) writeHeader(archivePath string, hdr *tar.Header) error {
 }
 
 func (t *tarball) AddEntry(archivePath string, content io.Reader) error {
-	contentBytes, err := ioutil.ReadAll(content) // (*) see note below
+	contentBytes, err := io.ReadAll(content) // (*) see note below
 	if err != nil {
 		return err
 	}
