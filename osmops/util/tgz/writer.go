@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 
@@ -93,14 +94,30 @@ func (t *tarball) writeHeader(archivePath string, hdr *tar.Header) error {
 }
 
 func (t *tarball) AddEntry(archivePath string, content io.Reader) error {
-	header := &tar.Header{Mode: int64(0644)}
+	contentBytes, err := ioutil.ReadAll(content) // (*) see note below
+	if err != nil {
+		return err
+	}
+
+	header := &tar.Header{
+		Mode: int64(0644),
+		Size: int64(len(contentBytes)), // (*) see note below
+	}
 	if err := t.writeHeader(archivePath, header); err != nil {
 		return err
 	}
-	if _, err := io.Copy(t.contentStream, content); err != nil {
+
+	if _, err := t.contentStream.Write(contentBytes); err != nil {
 		return err
 	}
+
 	return nil
+
+	// NOTE. Sucking all content into memory. It sucks. But I don't think
+	// the tar package API supports streaming of content not coming from
+	// a file. In fact, you've got to specify the Header's size *before*
+	// calling the Write method which rules out arbitrary streams where
+	// you've got no way to tell beforehand how much data you can read.
 }
 
 func (t *tarball) AddFile(archivePath, filePath string, fi os.FileInfo) error {
