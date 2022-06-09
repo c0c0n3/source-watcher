@@ -28,3 +28,8 @@ func (buf *Buffer) Read(p []byte) (n int, err error) {
 func (buf *Buffer) Close() error {
 	return nil
 }
+
+// Bytes returns a slice holding the unread portion of the buffer.
+func (buf *Buffer) Bytes() []byte {
+	return buf.data.Bytes()
+}

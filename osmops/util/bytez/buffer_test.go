@@ -3,7 +3,7 @@ package bytez
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
+	"reflect"
 	"testing"
 )
 
@@ -37,7 +37,7 @@ func writeAll(dest io.WriteCloser) {
 
 func readAll(src io.ReadCloser) []byte {
 	defer src.Close()
-	data, _ := ioutil.ReadAll(src)
+	data, _ := io.ReadAll(src)
 	return data
 }
 
@@ -46,4 +46,39 @@ func TestWriteThenRead(t *testing.T) {
 	writeAll(buf)
 	got := readAll(buf)
 	checkData(t, got)
+}
+
+func TestBytesBeforeAnyRead(t *testing.T) {
+	buf := NewBuffer()
+	buf.Write([]byte{1, 2, 3})
+
+	got := buf.Bytes()
+	want := []byte{1, 2, 3}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+
+	got, _ = io.ReadAll(buf)
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
+func TestBytesAfterRead(t *testing.T) {
+	buf := NewBuffer()
+	buf.Write([]byte{1, 2, 3})
+
+	firstTwo := make([]byte, 2)
+	buf.Read(firstTwo)
+
+	want := []byte{1, 2}
+	if !reflect.DeepEqual(firstTwo, want) {
+		t.Errorf("want: %v; got: %v", want, firstTwo)
+	}
+
+	got := buf.Bytes()
+	want = []byte{3}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
 }
