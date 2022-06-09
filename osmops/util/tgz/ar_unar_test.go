@@ -30,6 +30,7 @@ func withTempDir(t *testing.T, do func(string)) {
 		t.Errorf("couldn't create temp dir: %v", err)
 	} else {
 		defer os.RemoveAll(tempDir)
+		defer os.Chmod(tempDir, 0700) // make sure you can remove it
 		do(tempDir)
 	}
 }

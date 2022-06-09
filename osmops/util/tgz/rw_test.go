@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -55,7 +54,7 @@ func writeArchiveAndCreateReader(t *testing.T) Reader {
 
 func checkEntryContent(archivePath string, fi os.FileInfo, entry io.Reader) error {
 	name := path.Base(archivePath)
-	contentBytes, err := ioutil.ReadAll(entry)
+	contentBytes, err := io.ReadAll(entry)
 	if err != nil {
 		return err
 	}

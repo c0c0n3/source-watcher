@@ -59,10 +59,7 @@ func makeEntryReader(destDirPath string) EntryReader {
 		defer fd.Close()
 
 		_, err = io.Copy(fd, content)
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	}
 }
 

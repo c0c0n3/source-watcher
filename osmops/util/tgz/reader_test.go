@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -68,7 +67,7 @@ func makeBrokenArchiveReader(t *testing.T) Reader {
 	}
 	writer.Close()
 
-	data, err := ioutil.ReadAll(sink)
+	data, err := io.ReadAll(sink)
 	if err != nil {
 		t.Fatalf("couldn't read tgz data: %v", err)
 	}

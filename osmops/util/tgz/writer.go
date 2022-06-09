@@ -106,11 +106,8 @@ func (t *tarball) AddEntry(archivePath string, content io.Reader) error {
 		return err
 	}
 
-	if _, err := t.contentStream.Write(contentBytes); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = t.contentStream.Write(contentBytes)
+	return err
 
 	// NOTE. Sucking all content into memory. It sucks. But I don't think
 	// the tar package API supports streaming of content not coming from
@@ -122,7 +119,7 @@ func (t *tarball) AddEntry(archivePath string, content io.Reader) error {
 func (t *tarball) AddFile(archivePath, filePath string, fi os.FileInfo) error {
 	var err error
 
-	if !fi.Mode().IsRegular() {
+	if fi == nil || !fi.Mode().IsRegular() {
 		return nil
 	}
 
