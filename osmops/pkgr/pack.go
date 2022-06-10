@@ -9,6 +9,8 @@ import (
 	"github.com/fluxcd/source-watcher/osmops/util/tgz"
 )
 
+// Pack creates an OSM package from the source files contained in the
+// specified directory.
 func Pack(source file.AbsPath) (*Package, error) {
 	sink := bytez.NewBuffer()
 	pkgSource := newPkgSrc(source)

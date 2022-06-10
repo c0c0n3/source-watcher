@@ -9,11 +9,36 @@ import (
 	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
+// Package holds the data that make up an OSM package.
 type Package struct {
-	Name   string
+	// The package name. Conventionally this is the same as the name of
+	// the directory containing the source files. We also follow this
+	// convention.
+	Name string
+	// Metadata about the package source files.
 	Source PackageSource
-	Data   io.ReadCloser
-	Hash   string
+	// Gzipped tar stream containing the package source files plus a
+	// checksum file.
+	//
+	// Each source file is archived at a path "r/p" where r is the name of
+	// the directory containing the package source files and p is the file's
+	// path relative to r. For example, if a package source directory "my-pkg"
+	// contained a file "d/f", f's path in the archive would be "my-pkg/d/f".
+	//
+	// The stream also contains a checksum file at path "r/checksums.txt",
+	// where r is the name of the directory containing the package source
+	// files. This file has an MD5 hash entry in correspondence of each file
+	// found in the package source directory and subdirectories. Each entry
+	// is a text line starting with the MD5 of the file, followed by a tab
+	// and then the path of the file in the archive. Here's an example:
+	//
+	//     c122710acb043b99be209fefd9ae2032	my-pkg/README.md
+	//     7044f64c16d4ef3eeef7f8668a4dc5a1	my-pkg/knf/vnfd.yaml
+	//     6cbc0db17616eff57c60efa0eb15ac76	my-pkg/nsd.yaml
+	//
+	Data io.ReadCloser
+	// MD5 hash of the whole gzipped tar stream.
+	Hash string
 }
 
 func makePackage(src PackageSource, data *bytez.Buffer) *Package {
@@ -25,10 +50,21 @@ func makePackage(src PackageSource, data *bytez.Buffer) *Package {
 	}
 }
 
+// PackageSource provide metadata about an OSM package's source files.
 type PackageSource interface {
+	// The root directory containing the package source files.
 	Directory() file.AbsPath
+	// The name of the root directory.
 	DirectoryName() string
+	// Relative paths of the files in the package source directory and
+	// subdirectories. Each path is prefixed by the package source directory's
+	// name. For example, if "my-pkg" is the root and there's a file "f" at
+	// "d/f", the corresponding path returned by this method is "my-pkg/d/f".
+	// This method returns the paths sorted in alphabetical order.
 	SortedFilePaths() []string
+	// Lookup the MD5 hash of a source file in the package.
+	// The filePath argument must be one of the paths returned by
+	// SortedFilePaths.
 	FileHash(filePath string) string
 }
 
