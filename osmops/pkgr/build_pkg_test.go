@@ -35,7 +35,7 @@ var wantOpenLdapNsPaths = []string{
 
 func TestPackOpenLdapNs(t *testing.T) {
 	wantName := "openldap_ns"
-	wantHash := "7f415fb157998b9602b9e18081904cef"
+	wantHash := "fa87cba1f1db5e2140aa5a564534cadd"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapNsChecksumContent,
 		wantOpenLdapNsPaths)
 }
@@ -50,7 +50,7 @@ var wantOpenLdapKnfPaths = []string{
 
 func TestPackOpenLdapKnf(t *testing.T) {
 	wantName := "openldap_knf"
-	wantHash := "491a48ec04dff8c301b1b9c41bf0c437"
+	wantHash := "a83fd6396045acb8aa3013c4770a5a35"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapKnfChecksumContent,
 		wantOpenLdapKnfPaths)
 }
@@ -69,7 +69,7 @@ var wantOpenLdapNestedPaths = []string{
 
 func TestPackOpenLdapNested(t *testing.T) {
 	wantName := "openldap_nested"
-	wantHash := "8f1616f82522de1f0169e4c4c471bcda"
+	wantHash := "3220675e2124767a7a11f32a37340cb8"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapNestedChecksumContent,
 		wantOpenLdapNestedPaths)
 }
@@ -86,7 +86,7 @@ func verifyPackage(t *testing.T, wantName, wantHash, wantChecksum string,
 		t.Errorf("want name: %s; got: %s", wantName, pkg.Name)
 	}
 
-	if pkg.Source.Value() != source.Value() {
+	if pkg.Source.Directory().Value() != source.Value() {
 		t.Errorf("want source: %v; got: %v", source, pkg.Source)
 	}
 
