@@ -1,6 +1,7 @@
 package file
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -124,5 +125,44 @@ func TestListPathsErrorOnInvalidTargetDir(t *testing.T) {
 	got, err := ListPaths("")
 	if err == nil {
 		t.Errorf("want error; got: %v", got)
+	}
+}
+
+func TestListSubDirectoryNamesWhenNoSubdirs(t *testing.T) {
+	flatDir := findTestDataDir(1)
+	got, err := ListSubDirectoryNames(flatDir.Value())
+	if err != nil {
+		t.Fatalf("want: empty list; got error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("want: empty list; got: %v", got)
+	}
+}
+
+func TestListSubDirectoryNamesWithDirTree(t *testing.T) {
+	dirTree := findTestDataDir(2)
+	want := []string{"d1", "d2"}
+
+	got, err := ListSubDirectoryNames(dirTree.Value())
+	if err != nil {
+		t.Fatalf("want: %v; got error: %v", want, err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
+func TestListSubDirectoryNamesScanDirErr(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "file-test")
+	if err != nil {
+		t.Fatalf("couldn't create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	os.Chmod(tempDir, 0200) // ListSubDirectoryNames can't scan it
+
+	_, err = ListSubDirectoryNames(tempDir)
+	if _, ok := err.(*fs.PathError); !ok {
+		t.Errorf("want: path access error; got: %v", err)
 	}
 }

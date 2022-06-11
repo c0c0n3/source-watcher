@@ -90,3 +90,24 @@ func ListPaths(dirPath string) ([]string, []error) {
 
 	return visitedPaths, errs
 }
+
+// ListSubDirectoryNames returns the names of any directory found just
+// below dirPath. ListSubDirectoryNames sorts the returned names in
+// alphabetical order.
+func ListSubDirectoryNames(dirPath string) ([]string, error) {
+	dirs := []string{}
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return dirs, err
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			dirs = append(dirs, e.Name())
+		}
+	}
+
+	sort.Strings(dirs)
+
+	return dirs, nil
+}
