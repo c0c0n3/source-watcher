@@ -161,8 +161,14 @@ func TestListSubDirectoryNamesScanDirErr(t *testing.T) {
 
 	os.Chmod(tempDir, 0200) // ListSubDirectoryNames can't scan it
 
-	_, err = ListSubDirectoryNames(tempDir)
+	got, err := ListSubDirectoryNames(tempDir)
 	if _, ok := err.(*fs.PathError); !ok {
 		t.Errorf("want: path access error; got: %v", err)
+	}
+	if got == nil {
+		t.Errorf("want: empty names list; got: nil")
+	}
+	if len(got) != 0 {
+		t.Errorf("want: empty names list; got: %v", got)
 	}
 }
