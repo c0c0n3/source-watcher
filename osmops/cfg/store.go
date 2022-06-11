@@ -54,6 +54,12 @@ func NewStore(repoRootDir file.AbsPath) (*Store, error) {
 // repo root directory.
 const OpsConfigFileName = "osm_ops_config.yaml"
 
+// The name of the sub-directory of RepoTargetDirectory where to look for
+// OSM source package directories. For now this is not configurable, if
+// there are any OSM package source directories they should be in "t/osm-pkgs"
+// where t is the absolute path returned by RepoTargetDirectory.
+const OsmPackagesDirName = "osm-pkgs"
+
 func readConfig(rootDir file.AbsPath) (*OpsConfig, error) {
 	file := rootDir.Join(OpsConfigFileName)
 	if fileData, err := ioutil.ReadFile(file.Value()); err != nil {
@@ -121,6 +127,28 @@ func (s *Store) RepoRootDirectory() file.AbsPath {
 // the repo where to find OSM Git Ops files.
 func (s *Store) RepoTargetDirectory() file.AbsPath {
 	return s.targetDir
+}
+
+// RepoPkgDirectories lists, in alphabetical order, the sub-directories
+// of the OSM package root directory. If there's no OSM package directory,
+// RepoPkgDirectories returns an empty list.
+// See also: OsmPackagesDirName.
+func (s *Store) RepoPkgDirectories() ([]file.AbsPath, error) {
+	dirs := []file.AbsPath{}
+
+	pkgsDir := s.targetDir.Join(OsmPackagesDirName)
+	if err := pkgsDir.IsDir(); err != nil {
+		return dirs, nil
+	}
+
+	sortedDirNames, err := file.ListSubDirectoryNames(pkgsDir.Value())
+	for _, name := range sortedDirNames { // (*)
+		dirPath := pkgsDir.Join(name)
+		dirs = append(dirs, dirPath)
+	}
+	return dirs, err
+
+	// (*) sortedDirNames is empty if err but never nil.
 }
 
 // OpsFileExtensions returns the file extensions used to filter OSM GitOps
