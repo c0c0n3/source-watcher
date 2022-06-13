@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"path"
 	"path/filepath"
 	"sort"
 
@@ -114,12 +115,14 @@ func (c *logCollector) sortErrorFileNames() []string {
 // nbic.Workflow implementation
 
 type mockCreateOrUpdate struct {
-	dataMap map[string]*nbic.NsInstanceContent
+	dataMap           map[string]*nbic.NsInstanceContent
+	processedPkgNames []string
 }
 
 func newMockNbicWorkflow() *mockCreateOrUpdate {
 	return &mockCreateOrUpdate{
-		dataMap: map[string]*nbic.NsInstanceContent{},
+		dataMap:           map[string]*nbic.NsInstanceContent{},
+		processedPkgNames: []string{},
 	}
 }
 
@@ -131,7 +134,20 @@ func (m *mockCreateOrUpdate) CreateOrUpdateNsInstance(data *nbic.NsInstanceConte
 	return nil
 }
 
+func (m *mockCreateOrUpdate) CreateOrUpdatePackage(source file.AbsPath) error {
+	name := path.Base(source.Value())
+	if name == "p1" {
+		return errors.New("p1")
+	}
+	m.processedPkgNames = append(m.processedPkgNames, name)
+	return nil
+}
+
 // mockCreateOrUpdate utils
+
+func (m *mockCreateOrUpdate) hasProcessedKdus() bool {
+	return len(m.dataMap) > 0
+}
 
 func (m *mockCreateOrUpdate) hasProcessedKdu(name string) bool {
 	_, ok := m.dataMap[name]
