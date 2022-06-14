@@ -1,6 +1,7 @@
 package nbic
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -37,6 +38,14 @@ func newMockNbi() *mockNbi {
 	mock.handlers[handlerKey("POST", "/osm/nslcm/v1/ns_instances_content")] = nsInstContentHandler
 	mock.handlers[handlerKey("POST",
 		"/osm/nslcm/v1/ns_instances/0335c32c-d28c-4d79-9b94-0ffa36326932/action")] = nsInstActionHandler
+	mock.handlers[handlerKey("POST",
+		"/osm/vnfpkgm/v1/vnf_packages_content")] = createPkgHandler
+	mock.handlers[handlerKey("PUT",
+		"/osm/vnfpkgm/v1/vnf_packages_content/my_knf")] = updatePkgHandler
+	mock.handlers[handlerKey("POST",
+		"/osm/nsd/v1/ns_descriptors_content")] = createPkgHandler
+	mock.handlers[handlerKey("PUT",
+		"/osm/nsd/v1/ns_descriptors_content/my_ns")] = updatePkgHandler
 
 	return mock
 }
@@ -101,4 +110,33 @@ func nsInstContentHandler(req *http.Request) (*http.Response, error) {
 
 func nsInstActionHandler(req *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusAccepted}, nil
+}
+
+func createPkgHandler(req *http.Request) (*http.Response, error) {
+	return echoReceivedStatusCode("POST", req)
+}
+
+func updatePkgHandler(req *http.Request) (*http.Response, error) {
+	return echoReceivedStatusCode("PUT", req)
+}
+
+type StatusEcho struct {
+	Code int
+}
+
+func echoReceivedStatusCode(method string, req *http.Request) (*http.Response,
+	error) {
+	if req.Method != method {
+		return &http.Response{StatusCode: http.StatusMethodNotAllowed}, nil
+	}
+
+	inStatus := StatusEcho{}
+	dec := gob.NewDecoder(req.Body)
+	if err := dec.Decode(&inStatus); err != nil {
+		return &http.Response{StatusCode: http.StatusInternalServerError}, nil
+	}
+
+	return &http.Response{
+		StatusCode: int(inStatus.Code),
+	}, nil
 }

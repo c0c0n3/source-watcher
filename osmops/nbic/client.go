@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 	. "github.com/fluxcd/source-watcher/osmops/util/http"
 	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
 )
@@ -28,6 +29,9 @@ type Workflow interface {
 	// update operation to work, the target KNF must've been "on-boarded"
 	// in OSM already. So there must be, in OSM, a NSD and VNFD for it.
 	CreateOrUpdateNsInstance(data *NsInstanceContent) error
+
+	// TODO: docs
+	CreateOrUpdatePackage(source file.AbsPath) error
 }
 
 const REQUEST_TIMEOUT_SECONDS = 600
