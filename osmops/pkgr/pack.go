@@ -10,7 +10,9 @@ import (
 )
 
 // Pack creates an OSM package from the source files contained in the
-// specified directory.
+// specified directory. Pack writes the entire package content into a
+// memory buffer instead of streaming it. This shouldn't be a problem
+// since packages are usually very small, like less than 1Kb.
 func Pack(source file.AbsPath) (*Package, error) {
 	sink := bytez.NewBuffer()
 	pkgSource := newPkgSrc(source)

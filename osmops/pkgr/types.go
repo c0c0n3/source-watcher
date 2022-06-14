@@ -50,13 +50,7 @@ func makePackage(src PackageSource, data *bytez.Buffer) *Package {
 	}
 }
 
-// ReadAllData reads the entire package gzipped tar stream into memory.
-func (p *Package) ReadAllData() []byte {
-	buf, _ := p.Data.(*bytez.Buffer)
-	return buf.Bytes()
-}
-
-// PackageSource provide metadata about an OSM package's source files.
+// PackageSource provides metadata about an OSM package's source files.
 type PackageSource interface {
 	// The root directory containing the package source files.
 	Directory() file.AbsPath
