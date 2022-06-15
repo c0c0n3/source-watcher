@@ -130,7 +130,7 @@ func New(ctx context.Context, repoRootDir string) (*Engine, error) {
 // contains the source files of an OSM package. It reads p's contents to
 // create a gzipped tar archive in the OSM format (including creating the
 // "checksums.txt" file) and then streams it to OSM NBI to create or update
-// the package in OSM.
+// the package in OSM. (See: nbic.CreateOrUpdatePackage)
 //
 // Notice at the moment OsmOps does **not explicitly** handle dependencies
 // among OSM packages. But it does process sub-directories of the OSM package
