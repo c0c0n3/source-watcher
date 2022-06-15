@@ -9,6 +9,8 @@ import (
 
 	"github.com/fluxcd/source-watcher/osmops/pkgr"
 	"github.com/fluxcd/source-watcher/osmops/util/file"
+
+	//lint:ignore ST1001 HTTP EDSL is more readable w/o qualified import
 	. "github.com/fluxcd/source-watcher/osmops/util/http"
 )
 

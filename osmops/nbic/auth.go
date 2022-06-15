@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/url"
 
+	//lint:ignore ST1001 HTTP EDSL is more readable w/o qualified import
 	. "github.com/fluxcd/source-watcher/osmops/util/http"
 	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
 )

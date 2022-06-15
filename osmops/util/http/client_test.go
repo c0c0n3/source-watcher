@@ -78,6 +78,7 @@ func TestExchangeCloseBody(t *testing.T) {
 		t.Errorf("want no error; got: %v", err)
 	}
 
+	//lint:ignore SA5011 linter obviously got confused about nil ptr here
 	body := (res.Body).(*EmptyBody)
 	if !body.closed {
 		t.Errorf("didn't close body stream on exit")
