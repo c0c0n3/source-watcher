@@ -1,11 +1,11 @@
 package nbic
 
 import (
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 
 	u "github.com/fluxcd/source-watcher/osmops/util/http"
@@ -23,12 +23,14 @@ type requestReply struct {
 type mockNbi struct {
 	handlers  map[string]u.ReqSender
 	exchanges []requestReply
+	packages  map[string][]byte
 }
 
 func newMockNbi() *mockNbi {
 	mock := &mockNbi{
 		handlers:  map[string]u.ReqSender{},
 		exchanges: []requestReply{},
+		packages:  map[string][]byte{},
 	}
 
 	mock.handlers[handlerKey("POST", "/osm/admin/v1/tokens")] = tokenHandler
@@ -39,13 +41,13 @@ func newMockNbi() *mockNbi {
 	mock.handlers[handlerKey("POST",
 		"/osm/nslcm/v1/ns_instances/0335c32c-d28c-4d79-9b94-0ffa36326932/action")] = nsInstActionHandler
 	mock.handlers[handlerKey("POST",
-		"/osm/vnfpkgm/v1/vnf_packages_content")] = createPkgHandler
+		"/osm/vnfpkgm/v1/vnf_packages_content")] = mock.createPkgHandler
 	mock.handlers[handlerKey("PUT",
-		"/osm/vnfpkgm/v1/vnf_packages_content/my_knf")] = updatePkgHandler
+		"/osm/vnfpkgm/v1/vnf_packages_content/")] = mock.updatePkgHandler
 	mock.handlers[handlerKey("POST",
-		"/osm/nsd/v1/ns_descriptors_content")] = createPkgHandler
+		"/osm/nsd/v1/ns_descriptors_content")] = mock.createPkgHandler
 	mock.handlers[handlerKey("PUT",
-		"/osm/nsd/v1/ns_descriptors_content/my_ns")] = updatePkgHandler
+		"/osm/nsd/v1/ns_descriptors_content/")] = mock.updatePkgHandler
 
 	return mock
 }
@@ -54,12 +56,23 @@ func handlerKey(method string, path string) string {
 	return fmt.Sprintf("%s %s", method, path)
 }
 
-func (s *mockNbi) exchange(req *http.Request) (*http.Response, error) {
+func (s *mockNbi) lookupHandler(req *http.Request) (u.ReqSender, error) {
 	key := handlerKey(req.Method, req.URL.Path)
-	handle, ok := s.handlers[key]
-	if !ok {
-		return &http.Response{StatusCode: http.StatusInternalServerError},
-			fmt.Errorf("no handler for request: %s", key)
+	if handle, ok := s.handlers[key]; ok {
+		return handle, nil
+	}
+	for k, handle := range s.handlers {
+		if strings.HasPrefix(key, k) {
+			return handle, nil
+		}
+	}
+	return nil, fmt.Errorf("no handler for request: %s", key)
+}
+
+func (s *mockNbi) exchange(req *http.Request) (*http.Response, error) {
+	handle, err := s.lookupHandler(req)
+	if err != nil {
+		return &http.Response{StatusCode: http.StatusInternalServerError}, err
 	}
 
 	res, err := handle(req)
@@ -112,31 +125,24 @@ func nsInstActionHandler(req *http.Request) (*http.Response, error) {
 	return &http.Response{StatusCode: http.StatusAccepted}, nil
 }
 
-func createPkgHandler(req *http.Request) (*http.Response, error) {
-	return echoReceivedStatusCode("POST", req)
-}
-
-func updatePkgHandler(req *http.Request) (*http.Response, error) {
-	return echoReceivedStatusCode("PUT", req)
-}
-
-type StatusEcho struct {
-	Code int
-}
-
-func echoReceivedStatusCode(method string, req *http.Request) (*http.Response,
-	error) {
-	if req.Method != method {
-		return &http.Response{StatusCode: http.StatusMethodNotAllowed}, nil
+func (m *mockNbi) createPkgHandler(req *http.Request) (*http.Response, error) {
+	name := strings.TrimSuffix(req.Header.Get("Content-Filename"), ".tar.gz")
+	if name == "" {
+		return &http.Response{StatusCode: http.StatusBadRequest}, nil
 	}
 
-	inStatus := StatusEcho{}
-	dec := gob.NewDecoder(req.Body)
-	if err := dec.Decode(&inStatus); err != nil {
-		return &http.Response{StatusCode: http.StatusInternalServerError}, nil
+	if _, ok := m.packages[name]; ok {
+		return &http.Response{StatusCode: http.StatusConflict}, nil
 	}
 
-	return &http.Response{
-		StatusCode: int(inStatus.Code),
-	}, nil
+	pkgTgzData, _ := io.ReadAll(req.Body)
+	m.packages[name] = pkgTgzData
+	return &http.Response{StatusCode: http.StatusCreated}, nil
+}
+
+func (m *mockNbi) updatePkgHandler(req *http.Request) (*http.Response, error) {
+	name := path.Base(req.URL.Path)
+	pkgTgzData, _ := io.ReadAll(req.Body)
+	m.packages[name] = pkgTgzData
+	return &http.Response{StatusCode: http.StatusOK}, nil
 }

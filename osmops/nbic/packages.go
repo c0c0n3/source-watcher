@@ -2,6 +2,7 @@ package nbic
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,117 +13,174 @@ import (
 )
 
 func (s *Session) CreateOrUpdatePackage(source file.AbsPath) error {
-	handler := pkgHandler{s, source, pkgr.Pack}
+	reader, err := newPkgReader(source)
+	if err != nil {
+		return err
+	}
+	handler := pkgHandler{
+		session: s,
+		pkg:     reader,
+	}
 	return handler.process()
 }
 
-type pkgHandler struct {
-	session   *Session
-	pkgSource file.AbsPath
-	pack      func(file.AbsPath) (*pkgr.Package, error) // added for testability
+// pkgReader wraps Package to consolidate in one place all the assumptions
+// this module makes about OSM packages in an OsmOps-managed repo.
+// Specifically:
+//
+// - pkg name = pkg ID
+// - VNF pkg => pgk name ends w/ "_knf"
+// - NS pkg => pkg name ends w/ "_ns"
+//
+// None of the above needs to be true in general, but OsmOps relies on that
+// at the moment to simplify the implementation. Eventually, we'll redo this
+// properly, i.e. use a semantic approach (parse, interpret OSM files) rather
+// than naming conventions and guesswork.
+type pkgReader struct {
+	pkg  *pkgr.Package
+	data []byte
 }
 
-// Assumptions:
-// - pkg name = pkg ID
-// - VNF pkg => pgk name ends w/ _knf
-// - NS pkg => pkg name ends w/ _ns
+func newPkgReader(pkgSource file.AbsPath) (*pkgReader, error) {
+	pkg, err := pkgr.Pack(pkgSource)
+	if err != nil {
+		return nil, err
+	}
+	data, err := io.ReadAll(pkg.Data)
+	return &pkgReader{
+		pkg:  pkg,
+		data: data,
+	}, err
+}
 
-func (h *pkgHandler) lookupCreateUrl(pkg *pkgr.Package) (*url.URL, error) {
-	if strings.HasSuffix(pkg.Name, "_knf") {
+func (r *pkgReader) Source() file.AbsPath {
+	return r.pkg.Source.Directory()
+}
+
+func (r *pkgReader) Name() string {
+	return r.pkg.Name
+}
+
+func (r *pkgReader) Id() string {
+	return r.Name()
+}
+
+func (r *pkgReader) Data() []byte {
+	return r.data
+}
+
+func (r *pkgReader) Hash() string {
+	return r.pkg.Hash
+}
+
+func (r *pkgReader) IsNs() bool {
+	return strings.HasSuffix(r.Name(), "_ns")
+}
+
+func (r *pkgReader) IsKnf() bool {
+	return strings.HasSuffix(r.Name(), "_knf")
+}
+
+type pkgHandler struct {
+	session *Session
+	pkg     *pkgReader
+}
+
+func (h *pkgHandler) lookupCreateUrl() (*url.URL, error) {
+	if h.pkg.IsKnf() {
 		return h.session.conn.VnfPackagesContent(), nil
 	}
-	if strings.HasSuffix(pkg.Name, "_ns") {
+	if h.pkg.IsNs() {
 		return h.session.conn.NsPackagesContent(), nil
 	}
-	return nil, fmt.Errorf("unsupported package type: %v", h.pkgSource)
+	return nil, h.unsupportedPackageType()
 }
 
-func (h *pkgHandler) lookupUpdateUrl(pkg *pkgr.Package) (*url.URL, error) {
-	if strings.HasSuffix(pkg.Name, "_knf") {
-		return h.session.conn.VnfPackageContent(pkg.Name), nil
+func (h *pkgHandler) lookupUpdateUrl() (*url.URL, error) {
+	if h.pkg.IsKnf() {
+		return h.session.conn.VnfPackageContent(h.pkg.Id()), nil
 	}
-	if strings.HasSuffix(pkg.Name, "_ns") {
-		return h.session.conn.NsPackageContent(pkg.Name), nil
+	if h.pkg.IsNs() {
+		return h.session.conn.NsPackageContent(h.pkg.Id()), nil
 	}
-	return nil, fmt.Errorf("unsupported package type: %v", h.pkgSource)
+	return nil, h.unsupportedPackageType()
+}
+
+func (h *pkgHandler) unsupportedPackageType() error {
+	return fmt.Errorf("unsupported package type: %v", h.pkg.Source())
 }
 
 func (h *pkgHandler) process() error {
-	pkg, err := h.pack(h.pkgSource)
+	res, err := h.create()
 	if err != nil {
 		return err
 	}
 
-	if res, err := h.create(pkg); err == nil {
-		if h.shouldUpdate(res) {
-			_, err = h.update(pkg)
-			return err
-		}
+	if h.shouldUpdate(res) {
+		_, err = h.update()
 	}
 	return err
 }
 
-func (h *pkgHandler) create(pkg *pkgr.Package) (*http.Response, error) {
-	endpoint, err := h.lookupCreateUrl(pkg)
+func (h *pkgHandler) create() (*http.Response, error) {
+	endpoint, err := h.lookupCreateUrl()
 	if err != nil {
 		return nil, err
 	}
-	return h.post(endpoint, pkg)
+	return h.post(endpoint)
 }
 
 func (h *pkgHandler) shouldUpdate(res *http.Response) bool {
 	return res.StatusCode == 409
 }
 
-func (h *pkgHandler) update(pkg *pkgr.Package) (*http.Response, error) {
-	endpoint, err := h.lookupUpdateUrl(pkg)
+func (h *pkgHandler) update() (*http.Response, error) {
+	endpoint, err := h.lookupUpdateUrl()
 	if err != nil {
 		return nil, err
 	}
-	return h.put(endpoint, pkg)
+	return h.put(endpoint)
 }
 
-func (h *pkgHandler) post(endpoint *url.URL, pkg *pkgr.Package) (*http.Response,
-	error) {
+func (h *pkgHandler) post(endpoint *url.URL) (*http.Response, error) {
 	req := Request(
 		POST, At(endpoint),
 		h.session.NbiAccessToken(),
 		Accept(MediaType.JSON),  // same as what OSM client does
 		Content(MediaType.GZIP), // ditto
-		ContentFilename(pkg),    // ditto
-		ContentFileMd5(pkg),     // ditto
-		Body(pkg.ReadAllData()), // TODO stream instead?
+		ContentFilename(h.pkg),  // ditto
+		ContentFileMd5(h.pkg),   // ditto
+		Body(h.pkg.Data()),
 	)
 	req.SetHandler(ExpectStatusCodeOneOf(201, 409))
 	return req.RunWith(h.session.transport)
 }
 
-func (h *pkgHandler) put(endpoint *url.URL, pkg *pkgr.Package) (*http.Response,
-	error) {
+func (h *pkgHandler) put(endpoint *url.URL) (*http.Response, error) {
 	req := Request(
 		PUT, At(endpoint),
 		h.session.NbiAccessToken(),
 		Accept(MediaType.JSON),  // same as what OSM client does
 		Content(MediaType.GZIP), // ditto
-		ContentFilename(pkg),    // ditto
-		ContentFileMd5(pkg),     // ditto
-		Body(pkg.ReadAllData()), // TODO stream instead?
+		ContentFilename(h.pkg),  // ditto
+		ContentFileMd5(h.pkg),   // ditto
+		Body(h.pkg.Data()),
 	)
 	req.SetHandler(ExpectSuccess())
 	return req.RunWith(h.session.transport)
 }
 
-func ContentFilename(pkg *pkgr.Package) ReqBuilder {
-	name := fmt.Sprintf("%s.tar.gz", pkg.Name)
+func ContentFilename(pkg *pkgReader) ReqBuilder {
+	name := fmt.Sprintf("%s.tar.gz", pkg.Name())
 	return func(request *http.Request) error {
 		request.Header.Set("Content-Filename", name)
 		return nil
 	}
 }
 
-func ContentFileMd5(pkg *pkgr.Package) ReqBuilder {
+func ContentFileMd5(pkg *pkgReader) ReqBuilder {
 	return func(request *http.Request) error {
-		request.Header.Set("Content-File-MD5", pkg.Hash)
+		request.Header.Set("Content-File-MD5", pkg.Hash())
 		return nil
 	}
 }
