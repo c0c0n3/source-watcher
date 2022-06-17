@@ -21,7 +21,7 @@ func buildNsDescMap(ds []nsDescView) nsDescMap {
 
 // NOTE. NSD name to ID lookup.
 // For our nsDescMap to work, there must be a bijection between NSD IDs and
-// name IDs. Lucklily, this is the case since OSM NBI enforces uniqueness of
+// name IDs. Luckily, this is the case since OSM NBI enforces uniqueness of
 // NSD name IDs. If you try uploading another package with a NSD having the
 // same name ID of an existing one, OSM NBI will complain loudly, e.g.
 //

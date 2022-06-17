@@ -2,6 +2,8 @@ NS package list example
 -----------------------
 
 Example output of a `GET` on `/osm/nsd/v1/ns_descriptors_content`.
+Notice this is the same as a `GET` on `/osm/nsd/v1/ns_descriptors`---I
+think this is the SOL005 endpoint?
 
 ```yaml
 -   _admin:

@@ -34,6 +34,147 @@ var validNbiTokenPayload = `{
 	}]
 }`
 
+var vnfDescriptors = `[
+    {
+        "_id": "4ffdeb67-92e7-46fa-9fa2-331a4d674137",
+        "description": "KNF with single KDU using a helm-chart for openldap version 1.2.7",
+        "df": [
+            {
+                "id": "default-df"
+            }
+        ],
+        "ext-cpd": [
+            {
+                "id": "mgmt-ext",
+                "k8s-cluster-net": "mgmtnet"
+            }
+        ],
+        "id": "openldap_knf",
+        "k8s-cluster": {
+            "nets": [
+                {
+                    "id": "mgmtnet"
+                }
+            ]
+        },
+        "kdu": [
+            {
+                "name": "ldap",
+                "helm-chart": "stable/openldap:1.2.7"
+            }
+        ],
+        "mgmt-cp": "mgmt-ext",
+        "product-name": "openldap_knf",
+        "provider": "Telefonica",
+        "version": "1.0",
+        "_admin": {
+            "userDefinedData": {},
+            "created": 1655475517.840946,
+            "modified": 1655478654.0081894,
+            "projects_read": [
+                "c9e9cf6f-98a4-45f8-b18d-b70d93422d88"
+            ],
+            "projects_write": [
+                "c9e9cf6f-98a4-45f8-b18d-b70d93422d88"
+            ],
+            "onboardingState": "ONBOARDED",
+            "operationalState": "ENABLED",
+            "usageState": "NOT_IN_USE",
+            "storage": {
+                "fs": "mongo",
+                "path": "/app/storage/",
+                "folder": "4ffdeb67-92e7-46fa-9fa2-331a4d674137",
+                "pkg-dir": "openldap_knf",
+                "descriptor": "openldap_knf/openldap_vnfd.yaml",
+                "zipfile": "openldap_knf.tar.gz"
+            }
+        },
+        "onboardingState": "ONBOARDED",
+        "operationalState": "ENABLED",
+        "usageState": "NOT_IN_USE",
+        "_links": {
+            "self": {
+                "href": "/vnfpkgm/v1/vnf_packages/4ffdeb67-92e7-46fa-9fa2-331a4d674137"
+            },
+            "vnfd": {
+                "href": "/vnfpkgm/v1/vnf_packages/4ffdeb67-92e7-46fa-9fa2-331a4d674137/vnfd"
+            },
+            "packageContent": {
+                "href": "/vnfpkgm/v1/vnf_packages/4ffdeb67-92e7-46fa-9fa2-331a4d674137/package_content"
+            }
+        }
+    },
+    {
+        "_id": "5ccfed39-92e7-46fa-9fa2-331a4d674137",
+        "description": "Made-up KNF with single KDU using a helm-chart for openldap version 1.2.7",
+        "df": [
+            {
+                "id": "default-df"
+            }
+        ],
+        "ext-cpd": [
+            {
+                "id": "mgmt-ext",
+                "k8s-cluster-net": "mgmtnet"
+            }
+        ],
+        "id": "dummy_knf",
+        "k8s-cluster": {
+            "nets": [
+                {
+                    "id": "mgmtnet"
+                }
+            ]
+        },
+        "kdu": [
+            {
+                "name": "ldap",
+                "helm-chart": "stable/openldap:1.2.7"
+            }
+        ],
+        "mgmt-cp": "mgmt-ext",
+        "product-name": "dummy_knf",
+        "provider": "big corp",
+        "version": "1.0",
+        "_admin": {
+            "userDefinedData": {},
+            "created": 1655475517.840946,
+            "modified": 1655478654.0081894,
+            "projects_read": [
+                "c9e9cf6f-98a4-45f8-b18d-b70d93422d88"
+            ],
+            "projects_write": [
+                "c9e9cf6f-98a4-45f8-b18d-b70d93422d88"
+            ],
+            "onboardingState": "ONBOARDED",
+            "operationalState": "ENABLED",
+            "usageState": "NOT_IN_USE",
+            "storage": {
+                "fs": "mongo",
+                "path": "/app/storage/",
+                "folder": "5ccfed39-92e7-46fa-9fa2-331a4d674137",
+                "pkg-dir": "dummy_knf",
+                "descriptor": "dummy_knf/openldap_vnfd.yaml",
+                "zipfile": "dummy_knf.tar.gz"
+            }
+        },
+        "onboardingState": "ONBOARDED",
+        "operationalState": "ENABLED",
+        "usageState": "NOT_IN_USE",
+        "_links": {
+            "self": {
+                "href": "/vnfpkgm/v1/vnf_packages/5ccfed39-92e7-46fa-9fa2-331a4d674137"
+            },
+            "vnfd": {
+                "href": "/vnfpkgm/v1/vnf_packages/5ccfed39-92e7-46fa-9fa2-331a4d674137/vnfd"
+            },
+            "packageContent": {
+                "href": "/vnfpkgm/v1/vnf_packages/5ccfed39-92e7-46fa-9fa2-331a4d674137/package_content"
+            }
+        }
+    }
+]`
+
 var nsDescriptors = `[
     {
         "_id": "aba58e40-d65f-4f4e-be0a-e248c14d3e03",
