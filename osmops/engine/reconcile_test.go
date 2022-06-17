@@ -3,22 +3,23 @@ package engine
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/fluxcd/source-watcher/osmops/cfg"
-	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
-func findTestDataDir(dirIndex int) u.AbsPath {
+func findTestDataDir(dirIndex int) file.AbsPath {
 	_, thisFileName, _, _ := runtime.Caller(1)
 	enclosingDir := filepath.Dir(thisFileName)
 	testDataDirName := fmt.Sprintf("test_%d", dirIndex)
 	testDataDir := filepath.Join(enclosingDir, "reconcile_test_dir",
 		testDataDirName)
-	p, _ := u.ParseAbsPath(testDataDir)
+	p, _ := file.ParseAbsPath(testDataDir)
 
 	return p
 }
@@ -57,7 +58,7 @@ func TestReconcileFailOnInvalidOpsConfig(t *testing.T) {
 	}
 }
 
-func TestReconcileDoNothingIfNoOsmGitOpsFileFound(t *testing.T) {
+func TestReconcileDoNothingIfNoOsmGitOpsFileNorOsmPkgFound(t *testing.T) {
 	logger := newLogCollector()
 	repoRootDir := findTestDataDir(2)
 
@@ -129,5 +130,73 @@ func TestNewNbicFailOnInvalidHostAndPort(t *testing.T) {
 	}
 	if _, err := newNbic(config); err == nil {
 		t.Errorf("want: error; got: nil")
+	}
+}
+
+func TestReconcileProcessNoOsmGitOpsFilesOnPackageErr(t *testing.T) {
+	logger := newLogCollector()
+	repoRootDir := findTestDataDir(4)
+	mockNbic := newMockNbicWorkflow()
+	engine, _ := New(newCtx(logger), repoRootDir.Value())
+	engine.nbic = mockNbic
+
+	engine.Reconcile()
+
+	wantProcessedPkgs := []string{"p2"}
+	if !reflect.DeepEqual(mockNbic.processedPkgNames, wantProcessedPkgs) {
+		t.Errorf("want processed pkgs: %v; got: %v", wantProcessedPkgs,
+			mockNbic.processedPkgNames)
+	}
+	if mockNbic.hasProcessedKdus() {
+		t.Errorf("want: skip kdus b/c of prev pkg errors; got: some processed")
+	}
+}
+
+func TestReconcileProcessStopOnRootPackageDirAccessErr(t *testing.T) {
+	logger := newLogCollector()
+	repoRootDir := findTestDataDir(5)
+	mockNbic := newMockNbicWorkflow()
+	engine, _ := New(newCtx(logger), repoRootDir.Value())
+	engine.nbic = mockNbic
+
+	pkgsDir := repoRootDir.Join("deploy.me/osm-pkgs")
+	os.Chmod(pkgsDir.Value(), 0200) // processPackages can't scan it
+	defer os.Chmod(pkgsDir.Value(), 0755)
+
+	engine.Reconcile()
+
+	wantProcessedPkgs := []string{}
+	if !reflect.DeepEqual(mockNbic.processedPkgNames, wantProcessedPkgs) {
+		t.Errorf("want processed pkgs: %v; got: %v", wantProcessedPkgs,
+			mockNbic.processedPkgNames)
+	}
+	if mockNbic.hasProcessedKdus() {
+		t.Errorf("want: skip kdus b/c of prev pkg errors; got: some processed")
+	}
+}
+
+func TestReconcileProcessPackagesAndOsmGitOpsFiles(t *testing.T) {
+	logger := newLogCollector()
+	repoRootDir := findTestDataDir(5)
+	mockNbic := newMockNbicWorkflow()
+	engine, _ := New(newCtx(logger), repoRootDir.Value())
+	engine.nbic = mockNbic
+
+	engine.Reconcile()
+
+	wantProcessedPkgs := []string{"p2", "p3"}
+	if !reflect.DeepEqual(mockNbic.processedPkgNames, wantProcessedPkgs) {
+		t.Errorf("want processed pkgs: %v; got: %v", wantProcessedPkgs,
+			mockNbic.processedPkgNames)
+	}
+
+	if mockNbic.hasProcessedKdu("k1") {
+		t.Errorf("want: skip k1 (invalid content); got: processed")
+	}
+	if !mockNbic.hasProcessedKdu("k2") {
+		t.Errorf("want: process k2; got: not processed")
+	}
+	if !mockNbic.hasProcessedKdu("k3") {
+		t.Errorf("want: process k3; got: not processed")
 	}
 }

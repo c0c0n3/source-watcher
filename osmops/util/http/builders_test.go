@@ -93,6 +93,38 @@ func TestSimplePostRequest(t *testing.T) {
 	}
 }
 
+func TestSimplePutRequest(t *testing.T) {
+	hp, _ := u.ParseHostAndPort("x:80")
+	url, _ := hp.Http("/a/b")
+	content := []byte("42")
+	req, err := BuildRequest(
+		PUT, At(url),
+		Body(content),
+	)
+
+	if err != nil {
+		t.Fatalf("want request, but got error: %v", err)
+	}
+
+	wantMethod := "PUT"
+	if req.Method != wantMethod {
+		t.Errorf("want: %s; got: %s", wantMethod, req.Method)
+	}
+
+	wantContentLength := int64(2)
+	if req.ContentLength != wantContentLength {
+		t.Errorf("want: %d; got: %d", wantContentLength, req.ContentLength)
+	}
+
+	gotBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		t.Errorf("want: %v; got: %v", content, err)
+	}
+	if string(gotBody) != string(content) {
+		t.Errorf("want: %v; got: %v", content, gotBody)
+	}
+}
+
 func TestEmptyBody(t *testing.T) {
 	content := []byte("")
 	req, err := BuildRequest(
@@ -247,6 +279,10 @@ var contentTypeHeaderFixtures = []struct {
 	{
 		in:   MediaType.YAML,
 		want: "Content-Type: application/yaml\r\n",
+	},
+	{
+		in:   MediaType.GZIP,
+		want: "Content-Type: application/gzip\r\n",
 	},
 }
 

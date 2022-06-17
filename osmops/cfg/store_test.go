@@ -8,15 +8,16 @@ import (
 	"testing"
 
 	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
-func findTestDataDir(dirIndex int) u.AbsPath {
+func findTestDataDir(dirIndex int) file.AbsPath {
 	_, thisFileName, _, _ := runtime.Caller(1)
 	enclosingDir := filepath.Dir(thisFileName)
 	testDataDirName := fmt.Sprintf("test_%d", dirIndex)
 	testDataDir := filepath.Join(enclosingDir, "store_test_dir",
 		testDataDirName)
-	p, _ := u.ParseAbsPath(testDataDir)
+	p, _ := file.ParseAbsPath(testDataDir)
 
 	return p
 }
@@ -91,5 +92,48 @@ func TestDefaultFileExtensions(t *testing.T) {
 		if !reflect.DeepEqual(wantExts, s.OpsFileExtensions()) {
 			t.Errorf("want: %v; got: %v", wantExts, s.OpsFileExtensions())
 		}
+	}
+}
+
+func TestNoRepoPkgRootDir(t *testing.T) {
+	repoRootDir := findTestDataDir(1)
+	store, _ := NewStore(repoRootDir)
+
+	got, err := store.RepoPkgDirectories()
+	if err != nil {
+		t.Fatalf("want: empty list; got error: %v", err)
+	}
+	if got == nil || len(got) != 0 {
+		t.Errorf("want: empty list; got: %v", got)
+	}
+}
+
+func TestRepoPkgRootDirWithNoSubdirs(t *testing.T) {
+	repoRootDir := findTestDataDir(5)
+	store, _ := NewStore(repoRootDir)
+
+	got, err := store.RepoPkgDirectories()
+	if err != nil {
+		t.Fatalf("want: empty list; got error: %v", err)
+	}
+	if got == nil || len(got) != 0 {
+		t.Errorf("want: empty list; got: %v", got)
+	}
+}
+
+func TestRepoPkgRootDirWithSubdirs(t *testing.T) {
+	repoRootDir := findTestDataDir(6)
+	store, _ := NewStore(repoRootDir)
+	want := []file.AbsPath{
+		repoRootDir.Join("deploy.me/osm-pkgs/p1"),
+		repoRootDir.Join("deploy.me/osm-pkgs/p2"),
+	}
+
+	got, err := store.RepoPkgDirectories()
+	if err != nil {
+		t.Fatalf("want: %v; got error: %v", want, err)
+	}
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want: %v; got: %v", want, got)
 	}
 }

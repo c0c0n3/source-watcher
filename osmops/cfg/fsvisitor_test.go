@@ -1,15 +1,13 @@
 package cfg
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
-	u "github.com/fluxcd/source-watcher/osmops/util"
+	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
 
 type processor struct {
@@ -43,7 +41,7 @@ func TestVisit(t *testing.T) {
 
 	errorFileNames := []string{}
 	for _, e := range errors {
-		if ve, ok := e.(*VisitError); ok {
+		if ve, ok := e.(*file.VisitError); ok {
 			name := filepath.Base(ve.AbsPath)
 			errorFileNames = append(errorFileNames, name)
 		}
@@ -66,22 +64,6 @@ func TestVisit(t *testing.T) {
 	}
 }
 
-func TestVisitFileParsePathError(t *testing.T) {
-	scanner := buildScanner(t)
-	scanner.parsePath = func(path string) (u.AbsPath, error) {
-		return u.AbsPath{}, fmt.Errorf("can't parse path: %v", path)
-	}
-	visitor := &processor{}
-
-	errors := scanner.Visit(visitor)
-	if len(errors) != 3 {
-		t.Errorf("want: parse err on k1, k2 and k3 paths; got: %v", errors)
-	}
-	if len(visitor.received) != 0 {
-		t.Errorf("want: no ops files visited; got: %v", visitor.received)
-	}
-}
-
 func TestVisitFileIOReadError(t *testing.T) {
 	scanner := buildScanner(t)
 	scanner.readFile = func(path string) ([]byte, error) {
@@ -95,41 +77,5 @@ func TestVisitFileIOReadError(t *testing.T) {
 	}
 	if len(visitor.received) != 0 {
 		t.Errorf("want: no ops files visited; got: %v", visitor.received)
-	}
-}
-
-func TestVisitCollectWalkError(t *testing.T) {
-	scanner := &KduNsActionRepoScanner{}
-	var visitor KduNsActionProcessor
-	es := []error{}
-
-	fn := scanner.visitAllAndCollectErrors(visitor, &es)
-	err := fmt.Errorf("I/O error while scanning the dir tree.")
-	var info fs.FileInfo
-	fn("/pa/th", info, err)
-
-	if len(es) != 1 {
-		t.Errorf("want: one error; got: %v", es)
-	}
-	want := &VisitError{AbsPath: "/pa/th", Err: err}
-	if got, ok := es[0].(*VisitError); !ok || want.Error() != got.Error() {
-		t.Errorf("want: %v; got: %v", want, got)
-	}
-}
-
-func TestVisitErrorStringRepr(t *testing.T) {
-	e := VisitError{AbsPath: "p", Err: fmt.Errorf("e")}
-	want := "p: e"
-	if e.Error() != want {
-		t.Errorf("want: %s; got: %s", want, e)
-	}
-}
-
-func TestVisitErrorUnwrapping(t *testing.T) {
-	cause := fmt.Errorf("cause")
-	e := VisitError{AbsPath: "p", Err: cause}
-	got := errors.Unwrap(e)
-	if cause != got {
-		t.Errorf("want: %v; got: %v", cause, got)
 	}
 }

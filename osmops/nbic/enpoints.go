@@ -58,3 +58,27 @@ func (b Connection) NsInstancesAction(nsInstanceId string) *url.URL {
 	path := fmt.Sprintf("/osm/nslcm/v1/ns_instances/%s/action", nsInstanceId)
 	return b.buildUrl(path)
 }
+
+// VnfPackagesContent returns the URL to the VNF packages content endpoint.
+func (b Connection) VnfPackagesContent() *url.URL {
+	return b.buildUrl("/osm/vnfpkgm/v1/vnf_packages_content")
+}
+
+// VnfPackageContent returns the URL to the endpoint of the VNF package
+// content identified by the given ID.
+func (b Connection) VnfPackageContent(pkgId string) *url.URL {
+	path := fmt.Sprintf("/osm/vnfpkgm/v1/vnf_packages_content/%s", pkgId)
+	return b.buildUrl(path)
+}
+
+// NsPackagesContent returns the URL to the NS packages content endpoint.
+func (b Connection) NsPackagesContent() *url.URL {
+	return b.buildUrl("/osm/nsd/v1/ns_descriptors_content")
+}
+
+// NsPackageContent returns the URL to the endpoint of the NS package
+// content identified by the given ID.
+func (b Connection) NsPackageContent(pkgId string) *url.URL {
+	path := fmt.Sprintf("/osm/nsd/v1/ns_descriptors_content/%s", pkgId)
+	return b.buildUrl(path)
+}

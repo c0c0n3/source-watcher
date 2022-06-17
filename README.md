@@ -37,7 +37,8 @@ and exemplify deployment scenarios.
 - **Declarative approach**. Edit YAML files to specify which KNFs should
   be in the target OSM cluster and their configuration. OSM Ops determines
   whether to create a new KNF or update an existing one, then issues the
-  OSM commands to realise your configuration.
+  OSM commands to realise your configuration. OSM Ops can also create or
+  update OSM packages.
 - **GitOps workflow**. Keep your OSM Ops YAML files in an online Git
   repository. OSM Ops automatically detects new commits and reconciles
   the deployment state declared in the YAML files with the actual live
@@ -61,11 +62,14 @@ and exemplify deployment scenarios.
 
 - Early days. But the code is solid (modular, close to 100% test coverage)
   and is a good foundation for further development.
-- Ready for Malaga Nov 2021 demo.
+- Successfully deployed and run the Malaga Nov 2021 demo; ready for the
+  Malaga end-to-end tests in Q3 2022.
 - Only create/update KNF available. No rollbacks—delete not implemented.
   But you can still rollback to a previous Git version as long as the set
   of KNFs is the same in both versions.
-
+- OSM packaging functionality partially relies on naming conventions. A
+  reasonable choice given the current phase of the project, but it could
+  be improved in later iterations. ([Details][pkg].)
 
 
 
@@ -82,3 +86,4 @@ and exemplify deployment scenarios.
     "Martel Innovate"
 [osm]: https://osm.etsi.org/
     "Open Source MANO"
+[pkg]: ./docs/osm-pkgs.md

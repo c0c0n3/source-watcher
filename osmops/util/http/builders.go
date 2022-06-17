@@ -26,6 +26,11 @@ var POST = func(request *http.Request) error {
 	return nil
 }
 
+var PUT = func(request *http.Request) error {
+	request.Method = "PUT"
+	return nil
+}
+
 func At(url *url.URL) ReqBuilder {
 	return func(request *http.Request) error {
 		if url == nil {
@@ -39,11 +44,13 @@ func At(url *url.URL) ReqBuilder {
 
 var MediaType = struct {
 	u.StrEnum
-	JSON, YAML u.EnumIx
+	JSON, YAML, GZIP u.EnumIx
 }{
-	StrEnum: u.NewStrEnum("application/json", "application/yaml"),
-	JSON:    0,
-	YAML:    1,
+	StrEnum: u.NewStrEnum("application/json", "application/yaml",
+		"application/gzip"),
+	JSON: 0,
+	YAML: 1,
+	GZIP: 2,
 }
 
 func Content(mediaType u.EnumIx) ReqBuilder {

@@ -7,6 +7,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/fluxcd/source-watcher/osmops/util/file"
+
+	//lint:ignore ST1001 HTTP EDSL is more readable w/o qualified import
 	. "github.com/fluxcd/source-watcher/osmops/util/http"
 	"github.com/fluxcd/source-watcher/osmops/util/http/sec"
 )
@@ -28,6 +31,27 @@ type Workflow interface {
 	// update operation to work, the target KNF must've been "on-boarded"
 	// in OSM already. So there must be, in OSM, a NSD and VNFD for it.
 	CreateOrUpdateNsInstance(data *NsInstanceContent) error
+
+	// CreateOrUpdatePackage uploads the given package to OSM through NBI.
+	//
+	// CreateOrUpdatePackage blindly assumes that the given directory in
+	// the OSMOps repo contains either a KNF or NS package. If the directory
+	// name ends with "_knf", CreateOrUpdatePackage treats the whole directory
+	// as a KNF package. Likewise, if the directory name ends with "_ns",
+	// CreateOrUpdatePackage treats it as an NS package. (CreateOrUpdatePackage
+	// will report an error if the directory name doesn't have an "_ns" or
+	// "_knf" suffix.)
+	//
+	// CreateOrUpdatePackage also relies on another naming convention to
+	// figure out the package ID. In fact, it assumes the directory name
+	// is also the package ID declared in the KNF or NS YAML stanza.
+	//
+	// CreateOrUpdatePackage expects to find the source files of the OSM
+	// package in the given source directory or subdirectories. It reads,
+	// recursively, the files in source, creates a gzipped tar archive in
+	// the OSM format (including creating the "checksums.txt" file) and
+	// then streams it to OSM NBI to create or update the package in OSM.
+	CreateOrUpdatePackage(source file.AbsPath) error
 }
 
 const REQUEST_TIMEOUT_SECONDS = 600
