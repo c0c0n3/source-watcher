@@ -280,6 +280,10 @@ var contentTypeHeaderFixtures = []struct {
 		in:   MediaType.YAML,
 		want: "Content-Type: application/yaml\r\n",
 	},
+	{
+		in:   MediaType.GZIP,
+		want: "Content-Type: application/gzip\r\n",
+	},
 }
 
 func TestContentTypeHeader(t *testing.T) {

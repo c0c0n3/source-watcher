@@ -50,7 +50,7 @@ var MediaType = struct {
 		"application/gzip"),
 	JSON: 0,
 	YAML: 1,
-	GZIP: 3,
+	GZIP: 2,
 }
 
 func Content(mediaType u.EnumIx) ReqBuilder {
