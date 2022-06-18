@@ -150,8 +150,8 @@ func (m *mockNbi) createPkgHandler(req *http.Request) (*http.Response, error) {
 }
 
 func (m *mockNbi) updatePkgHandler(req *http.Request) (*http.Response, error) {
-	name := path.Base(req.URL.Path)
+	osmPkgId := path.Base(req.URL.Path)
 	pkgTgzData, _ := io.ReadAll(req.Body)
-	m.packages[name] = pkgTgzData
+	m.packages[osmPkgId] = pkgTgzData
 	return &http.Response{StatusCode: http.StatusOK}, nil
 }

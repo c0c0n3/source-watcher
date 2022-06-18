@@ -26,27 +26,20 @@ func md5string(data []byte) string {
 	return fmt.Sprintf("%x", hash)
 }
 
-func callCreateOrUpdatePackage(times int, pkgDirName string) (*mockNbi, error) {
+func callCreateOrUpdatePackage(pkgDirName string) (*mockNbi, error) {
 	nbi := newMockNbi()
 	urls := newConn()
 	nbic, _ := New(urls, usrCreds, nbi.exchange)
 	pkgSrc := findTestDataDir(pkgDirName)
 
-	var err error
-	for k := 0; k < times; k++ {
-		err = nbic.CreateOrUpdatePackage(pkgSrc)
-		if err != nil {
-			break
-		}
-	}
-	return nbi, err
+	return nbi, nbic.CreateOrUpdatePackage(pkgSrc)
 }
 
 func checkUploadedPackage(t *testing.T, mockNbi *mockNbi, req *http.Request,
-	pkgDirName string) {
+	pkgDirName, osmPkgId string) {
 	gotFilename := req.Header.Get("Content-Filename")
 	gotHash := req.Header.Get("Content-File-MD5")
-	gotPkgTgzData := mockNbi.packages[pkgDirName]
+	gotPkgTgzData := mockNbi.packages[osmPkgId]
 
 	wantFilename := fmt.Sprintf("%s.tar.gz", pkgDirName)
 	if gotFilename != wantFilename {
@@ -68,45 +61,37 @@ func checkUnsupportedPackageErr(t *testing.T, err error) {
 }
 
 func runCreatePackageTest(t *testing.T, pkgDirName string) {
-	mockNbi, err := callCreateOrUpdatePackage(1, pkgDirName)
+	mockNbi, err := callCreateOrUpdatePackage(pkgDirName)
 
 	if err != nil {
 		t.Errorf("want: create package; got: %v", err)
 	}
-	if len(mockNbi.exchanges) != 2 { // #1 = get token
-		t.Fatalf("want: one req to create package; got: %d",
+	if len(mockNbi.exchanges) != 3 { // #1 = get token
+		t.Fatalf("want: one req to lookup package, then one to create it; got: %d",
 			len(mockNbi.exchanges)-1)
 	}
 
-	rr := mockNbi.exchanges[1]
-	checkUploadedPackage(t, mockNbi, rr.req, pkgDirName)
+	rr := mockNbi.exchanges[2]
+	checkUploadedPackage(t, mockNbi, rr.req, pkgDirName, pkgDirName)
 	if rr.res.StatusCode != http.StatusCreated {
 		t.Errorf("want status: %d; got: %d",
 			http.StatusCreated, rr.res.StatusCode)
 	}
 }
 
-func runUpdatePackageTest(t *testing.T, pkgDirName string) {
-	mockNbi, err := callCreateOrUpdatePackage(2, pkgDirName)
+func runUpdatePackageTest(t *testing.T, pkgDirName, osmPkgId string) {
+	mockNbi, err := callCreateOrUpdatePackage(pkgDirName)
 
 	if err != nil {
 		t.Errorf("want: update package; got: %v", err)
 	}
-	if len(mockNbi.exchanges) != 4 { // #1 = get token
-		msg := "want: one initial req to create the package, then one failed " +
-			"attempt to create it again, followed by one to update it; got: %d"
-		t.Fatalf(msg, len(mockNbi.exchanges)-1)
+	if len(mockNbi.exchanges) != 3 { // #1 = get token
+		t.Fatalf("want: one req to lookup package, then one to update it; got: %d",
+			len(mockNbi.exchanges)-1)
 	}
 
-	failedCreateExchange := mockNbi.exchanges[2]
-	checkUploadedPackage(t, mockNbi, failedCreateExchange.req, pkgDirName)
-	if failedCreateExchange.res.StatusCode != http.StatusConflict {
-		t.Errorf("want create status: %d; got: %d",
-			http.StatusConflict, failedCreateExchange.res.StatusCode)
-	}
-
-	updateExchange := mockNbi.exchanges[3]
-	checkUploadedPackage(t, mockNbi, updateExchange.req, pkgDirName)
+	updateExchange := mockNbi.exchanges[2]
+	checkUploadedPackage(t, mockNbi, updateExchange.req, pkgDirName, osmPkgId)
 	if updateExchange.res.StatusCode != http.StatusOK {
 		t.Errorf("want update status: %d; got: %d",
 			http.StatusOK, updateExchange.res.StatusCode)
@@ -114,23 +99,25 @@ func runUpdatePackageTest(t *testing.T, pkgDirName string) {
 }
 
 func TestCreateKnfPackage(t *testing.T) {
-	runCreatePackageTest(t, "openldap_knf")
+	runCreatePackageTest(t, "create_knf")
 }
 
 func TestCreateNsPackage(t *testing.T) {
-	runCreatePackageTest(t, "openldap_ns")
+	runCreatePackageTest(t, "create_ns")
 }
 
 func TestUpdateKnfPackage(t *testing.T) {
-	runUpdatePackageTest(t, "openldap_knf")
+	osmPkgId := "4ffdeb67-92e7-46fa-9fa2-331a4d674137" // see vnfDescriptors
+	runUpdatePackageTest(t, "openldap_knf", osmPkgId)
 }
 
 func TestUpdateNsPackage(t *testing.T) {
-	runUpdatePackageTest(t, "openldap_ns")
+	osmPkgId := "aba58e40-d65f-4f4e-be0a-e248c14d3e03" // see nsDescriptors
+	runUpdatePackageTest(t, "openldap_ns", osmPkgId)
 }
 
 func TestPackErrOnSourceDirAccess(t *testing.T) {
-	mockNbi, err := callCreateOrUpdatePackage(1, "not-there_knf")
+	mockNbi, err := callCreateOrUpdatePackage("not-there_knf")
 
 	if _, ok := err.(*file.VisitError); !ok {
 		t.Errorf("want: visit error; got: %v", err)
@@ -142,25 +129,10 @@ func TestPackErrOnSourceDirAccess(t *testing.T) {
 }
 
 func TestCreateUnsupportedPackage(t *testing.T) {
-	mockNbi, err := callCreateOrUpdatePackage(1, "unsupported")
+	mockNbi, err := callCreateOrUpdatePackage("unsupported")
 	if len(mockNbi.exchanges) > 0 {
 		t.Errorf("want: no req to create or update package; got: %d",
 			len(mockNbi.exchanges))
 	}
-	checkUnsupportedPackageErr(t, err)
-}
-
-func TestUpdateUnsupportedPackage(t *testing.T) {
-	nbi := newMockNbi()
-	urls := newConn()
-	nbic, _ := New(urls, usrCreds, nbi.exchange)
-	pkgSrc := findTestDataDir("unsupported")
-	reader, _ := newPkgReader(pkgSrc)
-	handler := pkgHandler{
-		session: nbic,
-		pkg:     reader,
-	}
-
-	_, err := handler.update()
 	checkUnsupportedPackageErr(t, err)
 }
