@@ -1,9 +1,5 @@
 package nbic
 
-import (
-	"fmt"
-)
-
 type nsDescView struct { // only the response fields we care about.
 	Id   string `json:"_id"`
 	Name string `json:"id"`
@@ -50,7 +46,7 @@ func (c *Session) lookupNsDescriptorId(name string) (string, error) {
 		}
 	}
 	if id, ok := c.nsdMap[name]; !ok {
-		return "", fmt.Errorf("no NSD found for name ID: %s", name)
+		return "", &missingDescriptor{typ: "NSD", name: name}
 	} else {
 		return id, nil
 	}

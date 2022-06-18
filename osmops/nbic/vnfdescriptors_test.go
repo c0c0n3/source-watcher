@@ -1,6 +1,7 @@
 package nbic
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -67,5 +68,20 @@ func TestLookupVnfDescIdFetchDataFromServerTokenError(t *testing.T) {
 	rr1 := nbi.exchanges[0]
 	if rr1.req.URL.Path != urls.Tokens().Path {
 		t.Errorf("want: %s; got: %s", urls.Tokens().Path, rr1.req.URL.Path)
+	}
+}
+
+func TestMissingDescErrFormat(t *testing.T) {
+	err := &missingDescriptor{
+		typ:  "x",
+		name: "y",
+	}
+	got := err.Error()
+
+	if !strings.Contains(got, "x") {
+		t.Errorf("want: contains type; got: no type")
+	}
+	if !strings.Contains(got, "y") {
+		t.Errorf("want: contains name; got: no name")
 	}
 }

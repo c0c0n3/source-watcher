@@ -48,8 +48,17 @@ func (c *Session) lookupVnfDescriptorId(name string) (string, error) {
 		}
 	}
 	if id, ok := c.vnfdMap[name]; !ok {
-		return "", fmt.Errorf("no VNFD found for name ID: %s", name)
+		return "", &missingDescriptor{typ: "VNFD", name: name}
 	} else {
 		return id, nil
 	}
+}
+
+type missingDescriptor struct {
+	typ  string
+	name string
+}
+
+func (e *missingDescriptor) Error() string {
+	return fmt.Sprintf("no %s found for name ID: %s", e.typ, e.name)
 }
