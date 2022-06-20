@@ -1,7 +1,6 @@
 package pkgr
 
 import (
-	"compress/gzip"
 	"io"
 
 	"github.com/fluxcd/source-watcher/osmops/util/bytez"
@@ -24,7 +23,7 @@ func Pack(source file.AbsPath) (*Package, error) {
 
 func writePackageData(source *pkgSrc, sink io.WriteCloser) error {
 	archiveBaseDirName := source.DirectoryName()
-	writer, err := tgz.NewWriter(archiveBaseDirName, sink, gzip.BestCompression)
+	writer, err := tgz.NewWriter(archiveBaseDirName, sink, tgz.WithBestCompression())
 	if err != nil {
 		return err
 	}

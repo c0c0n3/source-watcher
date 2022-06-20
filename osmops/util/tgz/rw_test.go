@@ -1,7 +1,6 @@
 package tgz
 
 import (
-	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -18,7 +17,7 @@ import (
 func writeArchive(sink io.WriteCloser) []error {
 	errs := []error{}
 
-	writer, err := NewWriter("", sink, gzip.BestSpeed)
+	writer, err := NewWriter("", sink, WithBestSpeed())
 	if err != nil {
 		errs = append(errs, err)
 		return errs

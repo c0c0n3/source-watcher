@@ -1,7 +1,6 @@
 package tgz
 
 import (
-	"compress/gzip"
 	"io"
 	"os"
 	"path"
@@ -19,7 +18,7 @@ import (
 func WriteFileArchive(sourceDir file.AbsPath, sink io.WriteCloser) error {
 	archiveBaseDirName := path.Base(sourceDir.Value())
 	scanner := file.NewTreeScanner(sourceDir)
-	writer, err := NewWriter(archiveBaseDirName, sink, gzip.BestCompression)
+	writer, err := NewWriter(archiveBaseDirName, sink, WithBestCompression())
 	if err != nil {
 		return err
 	}
