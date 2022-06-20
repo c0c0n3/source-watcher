@@ -4,7 +4,9 @@ import (
 	"crypto/md5"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -51,6 +53,20 @@ func checkUploadedPackage(t *testing.T, mockNbi *mockNbi, req *http.Request,
 	}
 }
 
+func checkUploadedPackageDesc(t *testing.T, mockNbi *mockNbi,
+	pkgDirName, descFilePath, osmPkgId string) {
+	descFile := findTestDataDir(pkgDirName).Join(descFilePath)
+	gotDescData := mockNbi.packages[osmPkgId]
+	wantDescData, err := os.ReadFile(descFile.Value())
+
+	if err != nil {
+		t.Fatalf("couldn't read file: %v", descFile)
+	}
+	if !reflect.DeepEqual(wantDescData, gotDescData) {
+		t.Errorf("want desc: %v; got: %v", wantDescData, gotDescData)
+	}
+}
+
 func checkUnsupportedPackageErr(t *testing.T, err error) {
 	if err == nil {
 		t.Fatalf("want err; got: nil")
@@ -79,7 +95,7 @@ func runCreatePackageTest(t *testing.T, pkgDirName string) {
 	}
 }
 
-func runUpdatePackageTest(t *testing.T, pkgDirName, osmPkgId string) {
+func runUpdatePackageTest(t *testing.T, pkgDirName, descFilePath, osmPkgId string) {
 	mockNbi, err := callCreateOrUpdatePackage(pkgDirName)
 
 	if err != nil {
@@ -91,10 +107,30 @@ func runUpdatePackageTest(t *testing.T, pkgDirName, osmPkgId string) {
 	}
 
 	updateExchange := mockNbi.exchanges[2]
-	checkUploadedPackage(t, mockNbi, updateExchange.req, pkgDirName, osmPkgId)
+	checkUploadedPackageDesc(t, mockNbi, pkgDirName, descFilePath, osmPkgId)
 	if updateExchange.res.StatusCode != http.StatusOK {
 		t.Errorf("want update status: %d; got: %d",
 			http.StatusOK, updateExchange.res.StatusCode)
+	}
+}
+
+func runUpdatePackageTestNoDescErr(t *testing.T, pkgDirName string) {
+	_, err := callCreateOrUpdatePackage(pkgDirName)
+	if err == nil {
+		t.Errorf("want: update package error; got: nil")
+	}
+	if !strings.HasPrefix(err.Error(), "no descriptor found") {
+		t.Errorf("want: no desc error; got: %v", err)
+	}
+}
+
+func runUpdatePackageTestManyDescErr(t *testing.T, pkgDirName string) {
+	_, err := callCreateOrUpdatePackage(pkgDirName)
+	if err == nil {
+		t.Errorf("want: update package error; got: nil")
+	}
+	if !strings.HasPrefix(err.Error(), "found more than one potential descriptor") {
+		t.Errorf("want: many desc error; got: %v", err)
 	}
 }
 
@@ -108,12 +144,28 @@ func TestCreateNsPackage(t *testing.T) {
 
 func TestUpdateKnfPackage(t *testing.T) {
 	osmPkgId := "4ffdeb67-92e7-46fa-9fa2-331a4d674137" // see vnfDescriptors
-	runUpdatePackageTest(t, "openldap_knf", osmPkgId)
+	runUpdatePackageTest(t, "openldap_knf", "openldap_vnfd.yaml", osmPkgId)
 }
 
 func TestUpdateNsPackage(t *testing.T) {
 	osmPkgId := "aba58e40-d65f-4f4e-be0a-e248c14d3e03" // see nsDescriptors
-	runUpdatePackageTest(t, "openldap_ns", osmPkgId)
+	runUpdatePackageTest(t, "openldap_ns", "openldap_nsd.yaml", osmPkgId)
+}
+
+func TestUpdateKnfPackageNoDescErr(t *testing.T) {
+	runUpdatePackageTestNoDescErr(t, "update_no_desc/openldap_knf")
+}
+
+func TestUpdateNsPackageNoDescErr(t *testing.T) {
+	runUpdatePackageTestNoDescErr(t, "update_no_desc/openldap_ns")
+}
+
+func TestUpdateKnfPackageManyDescErr(t *testing.T) {
+	runUpdatePackageTestManyDescErr(t, "update_many_desc/openldap_knf")
+}
+
+func TestUpdateNsPackageManyDescErr(t *testing.T) {
+	runUpdatePackageTestManyDescErr(t, "update_many_desc/openldap_ns")
 }
 
 func TestPackErrOnSourceDirAccess(t *testing.T) {

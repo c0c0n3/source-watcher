@@ -158,17 +158,54 @@ func (h *pkgHandler) post() (*http.Response, error) {
 }
 
 func (h *pkgHandler) put() (*http.Response, error) {
+	descData, err := h.findPkgDescriptor()
+	if err != nil {
+		return nil, err
+	}
 	req := Request(
 		PUT, At(h.endpoint),
 		h.session.NbiAccessToken(),
-		Accept(MediaType.JSON),  // same as what OSM client does
-		Content(MediaType.GZIP), // ditto
-		ContentFilename(h.pkg),  // ditto
-		ContentFileMd5(h.pkg),   // ditto
-		Body(h.pkg.Data()),
+		Accept(MediaType.JSON),
+		Content(MediaType.YAML),
+		Body(descData),
 	)
 	req.SetHandler(ExpectSuccess())
 	return req.RunWith(h.session.transport)
+}
+
+// NOTE. Package update. It's kinda weird the way it works, but most likely
+// I'm missing something. In fact, our initial implementation of put uploaded
+// the tarball. As it turns out, OSM client does something different. It tries
+// finding a YAML file in the package dir, blindly assumes it's a VNFD or NSD
+// and PUTs it in OSM. What if there are other files in the package? Well,
+// I've got no idea what OSM client does that, but I've changed put's impl
+// to be in line with OSM client's.
+
+func (h *pkgHandler) findPkgDescriptor() ([]byte, error) {
+	candidates := []string{}
+	for _, archivePath := range h.pkg.pkg.Source.SortedFilePaths() {
+		p := strings.ToLower(archivePath)
+		if strings.HasSuffix(p, ".yaml") || strings.HasSuffix(p, ".yml") {
+			candidates = append(candidates, archivePath)
+		}
+	}
+	if len(candidates) == 0 { // same as what OSM client does
+		return []byte{}, noDescriptorFound(h.pkg)
+	}
+	if len(candidates) > 1 { // same as what OSM client does
+		return []byte{}, moreThanOneDescriptorFound(h.pkg)
+	}
+	return h.pkg.pkg.Source.FileContent(candidates[0])
+}
+
+func moreThanOneDescriptorFound(pkg *pkgReader) error {
+	msg := "found more than one potential descriptor in: %v"
+	return fmt.Errorf(msg, pkg.Source())
+}
+
+func noDescriptorFound(pkg *pkgReader) error {
+	msg := "no descriptor found in: %v"
+	return fmt.Errorf(msg, pkg.Source())
 }
 
 func ContentFilename(pkg *pkgReader) ReqBuilder {
