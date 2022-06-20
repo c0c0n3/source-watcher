@@ -180,6 +180,9 @@ func (h *pkgHandler) put() (*http.Response, error) {
 // and PUTs it in OSM. What if there are other files in the package? Well,
 // I've got no idea what OSM client does that, but I've changed put's impl
 // to be in line with OSM client's.
+// OSM client's update methods:
+// - https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/vnfd.py
+// - https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/nsd.py
 
 func (h *pkgHandler) findPkgDescriptor() ([]byte, error) {
 	candidates := []string{}
