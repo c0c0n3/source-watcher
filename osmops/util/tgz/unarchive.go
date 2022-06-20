@@ -46,6 +46,10 @@ func ExtractTarball(tarballPath file.AbsPath, destDirPath string) error {
 
 func makeEntryReader(destDirPath string) EntryReader {
 	return func(archivePath string, fi os.FileInfo, content io.Reader) error {
+		if fi.IsDir() {
+			return nil
+		}
+
 		targetPath := filepath.Join(destDirPath, archivePath)
 		if err := ensureDirs(fi, targetPath); err != nil {
 			return err

@@ -35,6 +35,14 @@ func withTempDir(t *testing.T, do func(string)) {
 	}
 }
 
+func checkExtractedPaths(t *testing.T, sourceDir file.AbsPath, extractedDir string) {
+	want, _ := file.ListPaths(sourceDir.Value())
+	got, _ := file.ListPaths(extractedDir)
+	if !reflect.DeepEqual(want, got) {
+		t.Errorf("want: %v; got: %v", want, got)
+	}
+}
+
 func TestTgzThenExtract(t *testing.T) {
 	withTempDir(t, func(tempDirPath string) {
 		sourceDir := findTestDataDir()
@@ -42,13 +50,10 @@ func TestTgzThenExtract(t *testing.T) {
 		extractedDir := path.Join(tempDirPath, ArchiveTestDirName)
 
 		MakeTarball(sourceDir, tarball)
-		ExtractTarball(tarball, tempDirPath)
-
-		want, _ := file.ListPaths(sourceDir.Value())
-		got, _ := file.ListPaths(extractedDir)
-		if !reflect.DeepEqual(want, got) {
-			t.Errorf("want: %v; got: %v", want, got)
+		if err := ExtractTarball(tarball, tempDirPath); err != nil {
+			t.Fatalf("want: extract; got: %v", err)
 		}
+		checkExtractedPaths(t, sourceDir, extractedDir)
 	})
 }
 
@@ -65,25 +70,44 @@ func checkFileContent(pathname string) error {
 	return nil
 }
 
+func checkExtractedFiles(t *testing.T, extractedDir string) {
+	targetDir, _ := file.ParseAbsPath(extractedDir)
+	scanner := file.NewTreeScanner(targetDir)
+	es := scanner.Visit(func(node file.TreeNode) error {
+		if !node.FsMeta.IsDir() {
+			return checkFileContent(node.NodePath.Value())
+		}
+		return nil
+	})
+	if len(es) > 0 {
+		t.Errorf("want no errors; got: %v", es)
+	}
+}
+
 func TestTgzThenExtractContent(t *testing.T) {
 	withTempDir(t, func(tempDirPath string) {
 		sourceDir := findTestDataDir()
 		tarball, _ := file.ParseAbsPath(path.Join(tempDirPath, "test.tgz"))
-		extractedDir, _ := file.ParseAbsPath(
-			path.Join(tempDirPath, ArchiveTestDirName))
+		extractedDir := path.Join(tempDirPath, ArchiveTestDirName)
 
 		MakeTarball(sourceDir, tarball)
-		ExtractTarball(tarball, tempDirPath)
-
-		scanner := file.NewTreeScanner(extractedDir)
-		es := scanner.Visit(func(node file.TreeNode) error {
-			if !node.FsMeta.IsDir() {
-				return checkFileContent(node.NodePath.Value())
-			}
-			return nil
-		})
-		if len(es) > 0 {
-			t.Errorf("want no errors; got: %v", es)
+		if err := ExtractTarball(tarball, tempDirPath); err != nil {
+			t.Fatalf("want: extract; got: %v", err)
 		}
+		checkExtractedFiles(t, extractedDir)
+	})
+}
+
+func TestExtractTgzCreatedWithUnixTar(t *testing.T) {
+	withTempDir(t, func(tempDirPath string) {
+		sourceDir := findTestDataDir()
+		tarball, _ := file.ParseAbsPath(sourceDir.Value() + ".tgz")
+		extractedDir := path.Join(tempDirPath, ArchiveTestDirName)
+
+		if err := ExtractTarball(tarball, tempDirPath); err != nil {
+			t.Fatalf("want: extract; got: %v", err)
+		}
+		checkExtractedPaths(t, sourceDir, extractedDir)
+		checkExtractedFiles(t, extractedDir)
 	})
 }
