@@ -14,7 +14,7 @@ nsd:
         vnfd-id: openldap_knf
     id: openldap_ns
     name: openldap_ns
-    version: '1.0'
+    version: '1.1'
     virtual-link-desc:
     - id: mgmtnet
       mgmt-network: 'true'
