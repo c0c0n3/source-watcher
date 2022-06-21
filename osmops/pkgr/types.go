@@ -2,7 +2,9 @@ package pkgr
 
 import (
 	"io"
+	"os"
 	"path"
+	"path/filepath"
 	"sort"
 
 	"github.com/fluxcd/source-watcher/osmops/util/bytez"
@@ -50,7 +52,8 @@ func makePackage(src PackageSource, data *bytez.Buffer) *Package {
 	}
 }
 
-// PackageSource provides metadata about an OSM package's source files.
+// PackageSource provides metadata about an OSM package's source files
+// as well as their content.
 type PackageSource interface {
 	// The root directory containing the package source files.
 	Directory() file.AbsPath
@@ -66,6 +69,11 @@ type PackageSource interface {
 	// The filePath argument must be one of the paths returned by
 	// SortedFilePaths.
 	FileHash(filePath string) string
+	// FileContent returns the bytes that make up the specified file in the
+	// package.
+	// The filePath argument must be one of the paths returned by
+	// SortedFilePaths.
+	FileContent(filePath string) ([]byte, error)
 }
 
 type pkgSrc struct {
@@ -117,4 +125,10 @@ func (p *pkgSrc) addFileHash(node file.TreeNode) error {
 		p.pathToHashMap[baseNamePlusPath] = hash
 	}
 	return err
+}
+
+func (p *pkgSrc) FileContent(filePath string) ([]byte, error) {
+	filePathFromSrcDir, _ := filepath.Rel(p.srcDirName, filePath)
+	absPath := p.srcDir.Join(filePathFromSrcDir)
+	return os.ReadFile(absPath.Value())
 }

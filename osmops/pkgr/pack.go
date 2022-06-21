@@ -1,7 +1,6 @@
 package pkgr
 
 import (
-	"compress/gzip"
 	"io"
 
 	"github.com/fluxcd/source-watcher/osmops/util/bytez"
@@ -14,17 +13,22 @@ import (
 // memory buffer instead of streaming it. This shouldn't be a problem
 // since packages are usually very small, like less than 1Kb.
 func Pack(source file.AbsPath) (*Package, error) {
+	return doPack(source, tgz.WithBestCompression())
+}
+
+// added for testability
+func doPack(source file.AbsPath, opts ...tgz.WriterOption) (*Package, error) {
 	sink := bytez.NewBuffer()
 	pkgSource := newPkgSrc(source)
-	if err := writePackageData(pkgSource, sink); err != nil {
+	if err := writePackageData(pkgSource, sink, opts...); err != nil {
 		return nil, err
 	}
 	return makePackage(pkgSource, sink), nil
 }
 
-func writePackageData(source *pkgSrc, sink io.WriteCloser) error {
+func writePackageData(source *pkgSrc, sink io.WriteCloser, opts ...tgz.WriterOption) error {
 	archiveBaseDirName := source.DirectoryName()
-	writer, err := tgz.NewWriter(archiveBaseDirName, sink, gzip.BestCompression)
+	writer, err := tgz.NewWriter(archiveBaseDirName, sink, opts...)
 	if err != nil {
 		return err
 	}

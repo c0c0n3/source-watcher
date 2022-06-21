@@ -15,13 +15,9 @@ import (
 )
 
 func (s *Session) CreateOrUpdatePackage(source file.AbsPath) error {
-	reader, err := newPkgReader(source)
+	handler, err := newPkgHandler(s, source)
 	if err != nil {
 		return err
-	}
-	handler := pkgHandler{
-		session: s,
-		pkg:     reader,
 	}
 	return handler.process()
 }
@@ -84,83 +80,72 @@ func (r *pkgReader) IsKnf() bool {
 }
 
 type pkgHandler struct {
-	session *Session
-	pkg     *pkgReader
+	session  *Session
+	pkg      *pkgReader
+	endpoint *url.URL
+	isUpdate bool
 }
 
-func (h *pkgHandler) lookupCreateUrl() (*url.URL, error) {
-	if h.pkg.IsKnf() {
-		return h.session.conn.VnfPackagesContent(), nil
+func newPkgHandler(sesh *Session, pkgSrc file.AbsPath) (*pkgHandler, error) {
+	reader, err := newPkgReader(pkgSrc)
+	if err != nil {
+		return nil, err
 	}
-	if h.pkg.IsNs() {
-		return h.session.conn.NsPackagesContent(), nil
+	handler := &pkgHandler{
+		session: sesh,
+		pkg:     reader,
 	}
-	return nil, h.unsupportedPackageType()
+	if reader.IsKnf() {
+		return mkPkgHandler(
+			handler, handler.session.lookupVnfDescriptorId,
+			handler.session.conn.VnfPackagesContent,
+			handler.session.conn.VnfPackageContent)
+	}
+	if reader.IsNs() {
+		return mkPkgHandler(
+			handler, handler.session.lookupNsDescriptorId,
+			handler.session.conn.NsPackagesContent,
+			handler.session.conn.NsPackageContent)
+	}
+	return nil, unsupportedPackageType(reader)
 }
 
-func (h *pkgHandler) lookupUpdateUrl() (*url.URL, error) {
-	if h.pkg.IsKnf() {
-		return h.session.conn.VnfPackageContent(h.pkg.Id()), nil
-	}
-	if h.pkg.IsNs() {
-		return h.session.conn.NsPackageContent(h.pkg.Id()), nil
-	}
-	return nil, h.unsupportedPackageType()
+func unsupportedPackageType(pkg *pkgReader) error {
+	return fmt.Errorf("unsupported package type: %v", pkg.Source())
 }
 
-func (h *pkgHandler) unsupportedPackageType() error {
-	return fmt.Errorf("unsupported package type: %v", h.pkg.Source())
+type lookupDescId func(pkgId string) (string, error)
+type createEndpoint func() *url.URL
+type updateEndpoint func(osmPkgId string) *url.URL
+
+func mkPkgHandler(h *pkgHandler, getOsmId lookupDescId,
+	createUrl createEndpoint, updateUrl updateEndpoint) (*pkgHandler, error) {
+	osmPkgId, err := getOsmId(h.pkg.Id())
+	if _, ok := err.(*missingDescriptor); ok {
+		h.isUpdate = false
+		h.endpoint = createUrl()
+
+		return h, nil
+	}
+	if err == nil {
+		h.isUpdate = true
+		h.endpoint = updateUrl(osmPkgId)
+	}
+	return h, err
 }
 
 func (h *pkgHandler) process() error {
-	res, err := h.create()
-	if err != nil {
-		return err
+	run := h.post
+	if h.isUpdate {
+		run = h.put
 	}
-
-	if h.shouldUpdate(res) {
-		_, err = h.update()
-	}
+	_, err := run()
 	return err
 }
 
-func (h *pkgHandler) create() (*http.Response, error) {
-	endpoint, err := h.lookupCreateUrl()
-	if err != nil {
-		return nil, err
-	}
-	return h.post(endpoint)
-}
-
-func (h *pkgHandler) shouldUpdate(res *http.Response) bool {
-	return res.StatusCode == 409
-}
-
-func (h *pkgHandler) update() (*http.Response, error) {
-	endpoint, err := h.lookupUpdateUrl()
-	if err != nil {
-		return nil, err
-	}
-	return h.put(endpoint)
-}
-
-func (h *pkgHandler) post(endpoint *url.URL) (*http.Response, error) {
+func (h *pkgHandler) post() (*http.Response, error) {
 	req := Request(
-		POST, At(endpoint),
-		h.session.NbiAccessToken(),
-		Accept(MediaType.JSON),  // same as what OSM client does
-		Content(MediaType.GZIP), // ditto
-		ContentFilename(h.pkg),  // ditto
-		ContentFileMd5(h.pkg),   // ditto
-		Body(h.pkg.Data()),
-	)
-	req.SetHandler(ExpectStatusCodeOneOf(201, 409))
-	return req.RunWith(h.session.transport)
-}
-
-func (h *pkgHandler) put(endpoint *url.URL) (*http.Response, error) {
-	req := Request(
-		PUT, At(endpoint),
+		POST, At(h.endpoint),
 		h.session.NbiAccessToken(),
 		Accept(MediaType.JSON),  // same as what OSM client does
 		Content(MediaType.GZIP), // ditto
@@ -170,6 +155,60 @@ func (h *pkgHandler) put(endpoint *url.URL) (*http.Response, error) {
 	)
 	req.SetHandler(ExpectSuccess())
 	return req.RunWith(h.session.transport)
+}
+
+func (h *pkgHandler) put() (*http.Response, error) {
+	descData, err := h.findPkgDescriptor()
+	if err != nil {
+		return nil, err
+	}
+	req := Request(
+		PUT, At(h.endpoint),
+		h.session.NbiAccessToken(),
+		Accept(MediaType.JSON),
+		Content(MediaType.YAML),
+		Body(descData),
+	)
+	req.SetHandler(ExpectSuccess())
+	return req.RunWith(h.session.transport)
+}
+
+// NOTE. Package update. It's kinda weird the way it works, but most likely
+// I'm missing something. In fact, our initial implementation of put uploaded
+// the tarball. As it turns out, OSM client does something different. It tries
+// finding a YAML file in the package dir, blindly assumes it's a VNFD or NSD
+// and PUTs it in OSM. What if there are other files in the package? Well,
+// I've got no idea why OSM client does that, but I've changed put's impl
+// to be in line with OSM client's.
+// OSM client's update methods:
+// - https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/vnfd.py
+// - https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/nsd.py
+
+func (h *pkgHandler) findPkgDescriptor() ([]byte, error) {
+	candidates := []string{}
+	for _, archivePath := range h.pkg.pkg.Source.SortedFilePaths() {
+		p := strings.ToLower(archivePath)
+		if strings.HasSuffix(p, ".yaml") || strings.HasSuffix(p, ".yml") {
+			candidates = append(candidates, archivePath)
+		}
+	}
+	if len(candidates) == 0 { // same as what OSM client does
+		return []byte{}, noDescriptorFound(h.pkg)
+	}
+	if len(candidates) > 1 { // same as what OSM client does
+		return []byte{}, moreThanOneDescriptorFound(h.pkg)
+	}
+	return h.pkg.pkg.Source.FileContent(candidates[0])
+}
+
+func moreThanOneDescriptorFound(pkg *pkgReader) error {
+	msg := "found more than one potential descriptor in: %v"
+	return fmt.Errorf(msg, pkg.Source())
+}
+
+func noDescriptorFound(pkg *pkgReader) error {
+	msg := "no descriptor found in: %v"
+	return fmt.Errorf(msg, pkg.Source())
 }
 
 func ContentFilename(pkg *pkgReader) ReqBuilder {

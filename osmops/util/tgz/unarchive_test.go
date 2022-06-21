@@ -1,7 +1,6 @@
 package tgz
 
 import (
-	"compress/gzip"
 	"io/fs"
 	"os"
 	"path"
@@ -39,7 +38,7 @@ func writeFlatTarball(t *testing.T, tempDirPath string) file.AbsPath {
 		t.Fatalf("couldn't open tarball for writing: %v", err)
 	}
 
-	writer, err := NewWriter("", dest, gzip.BestSpeed)
+	writer, err := NewWriter("", dest, WithBestSpeed())
 	if err != nil {
 		t.Fatalf("couldn't create tarball writer: %v", err)
 	}

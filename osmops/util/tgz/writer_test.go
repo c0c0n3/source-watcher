@@ -59,30 +59,38 @@ func (x *bogusFile) Sys() interface{} {
 	return nil
 }
 
-func makeMemWriter() (Writer, *bytez.Buffer) {
+func makeMemWriter(opts ...WriterOption) (Writer, *bytez.Buffer) {
 	sink := bytez.NewBuffer()
-	writer, _ := NewWriter("", sink, gzip.BestSpeed)
+	if len(opts) == 0 {
+		opts = []WriterOption{WithBestSpeed()}
+	}
+	writer, _ := NewWriter("", sink, opts...)
 
 	return writer, sink
 }
 
 func TestNewWriterAcceptEmptyBaseDir(t *testing.T) {
 	sink := bytez.NewBuffer()
-	if _, err := NewWriter("", sink, gzip.BestSpeed); err != nil {
+	if _, err := NewWriter("", sink); err != nil {
 		t.Errorf("want: writer; got: %v", err)
 	}
 }
 
 func TestNewWriterErrOnNilSink(t *testing.T) {
-	if got, err := NewWriter("", nil, gzip.BestSpeed); err == nil {
+	if got, err := NewWriter("", nil); err == nil {
 		t.Errorf("want error; got: %v", got)
+	}
+}
+
+func withInvalidCompLevel() WriterOption {
+	return func(opts *writerOpts) {
+		opts.compressionLevel = gzip.HuffmanOnly - 1
 	}
 }
 
 func TestNewWriterErrOnInvalidGzipCompLevel(t *testing.T) {
 	sink := bytez.NewBuffer()
-	invalidLevel := gzip.HuffmanOnly - 1
-	if got, err := NewWriter("", sink, invalidLevel); err == nil {
+	if got, err := NewWriter("", sink, withInvalidCompLevel()); err == nil {
 		t.Errorf("want error; got: %v", got)
 	}
 }
@@ -128,5 +136,17 @@ func TestAddFileErrOnFileOpen(t *testing.T) {
 	err := writer.AddFile("", "", fileInfo)
 	if _, ok := err.(*fs.PathError); !ok {
 		t.Errorf("want: path error; got: %v", err)
+	}
+}
+
+func TestHeaderWritingErr(t *testing.T) {
+	wantErr := fmt.Errorf("foo")
+	writer, _ := makeMemWriter(WithBestSpeed(), withErrHdrSetter(wantErr))
+	content := bytez.NewBuffer()
+	content.Write([]byte{1})
+
+	got := writer.AddEntry("foo", content)
+	if got != wantErr {
+		t.Errorf("want error: %v; got: %v", wantErr, got)
 	}
 }

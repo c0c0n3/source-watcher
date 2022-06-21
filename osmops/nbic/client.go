@@ -79,6 +79,7 @@ type Session struct {
 	transport ReqSender
 	authz     *sec.TokenManager
 	nsdMap    nsDescMap
+	vnfdMap   vnfDescMap
 	vimAccMap vimAccountMap
 	nsInstMap nsInstanceMap
 }

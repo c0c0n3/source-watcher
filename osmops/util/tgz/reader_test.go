@@ -1,7 +1,6 @@
 package tgz
 
 import (
-	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -58,7 +57,7 @@ func TestIterateEntriesProcessErr(t *testing.T) {
 
 func makeBrokenArchiveReader(t *testing.T) Reader {
 	sink := bytez.NewBuffer()
-	writer, err := NewWriter("", sink, gzip.BestSpeed)
+	writer, err := NewWriter("", sink, WithBestSpeed())
 	if err != nil {
 		t.Fatalf("couldn't create writer: %v", err)
 	}

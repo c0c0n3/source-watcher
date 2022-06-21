@@ -40,6 +40,8 @@ func newMockNbi() *mockNbi {
 	mock.handlers[handlerKey("POST", "/osm/nslcm/v1/ns_instances_content")] = nsInstContentHandler
 	mock.handlers[handlerKey("POST",
 		"/osm/nslcm/v1/ns_instances/0335c32c-d28c-4d79-9b94-0ffa36326932/action")] = nsInstActionHandler
+	mock.handlers[handlerKey("GET",
+		"/osm/vnfpkgm/v1/vnf_packages_content")] = vnfDescHandler
 	mock.handlers[handlerKey("POST",
 		"/osm/vnfpkgm/v1/vnf_packages_content")] = mock.createPkgHandler
 	mock.handlers[handlerKey("PUT",
@@ -95,6 +97,13 @@ func tokenHandler(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+func vnfDescHandler(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       stringReader(vnfDescriptors),
+	}, nil
+}
+
 func nsDescHandler(req *http.Request) (*http.Response, error) {
 	return &http.Response{
 		StatusCode: http.StatusOK,
@@ -141,8 +150,8 @@ func (m *mockNbi) createPkgHandler(req *http.Request) (*http.Response, error) {
 }
 
 func (m *mockNbi) updatePkgHandler(req *http.Request) (*http.Response, error) {
-	name := path.Base(req.URL.Path)
+	osmPkgId := path.Base(req.URL.Path)
 	pkgTgzData, _ := io.ReadAll(req.Body)
-	m.packages[name] = pkgTgzData
+	m.packages[osmPkgId] = pkgTgzData
 	return &http.Response{StatusCode: http.StatusOK}, nil
 }

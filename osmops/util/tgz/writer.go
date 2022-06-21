@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 
 	"github.com/fluxcd/source-watcher/osmops/util/file"
 )
@@ -23,7 +22,7 @@ import (
 //     archiveBaseDirName := "my-root"
 //
 //     scanner := file.NewTreeScanner(sourceDir)
-//     writer, _ := NewWriter(archiveBaseDirName, sink, gzip.BestCompression)
+//     writer, _ := NewWriter(archiveBaseDirName, sink)
 //
 //     defer writer.Close()
 //     scanner.Visit(writer.Visitor())
@@ -53,28 +52,30 @@ type Writer interface {
 }
 
 type tarball struct {
-	baseDirName      string
 	contentStream    *tar.Writer
 	compressedStream *gzip.Writer
 	sink             io.WriteCloser
+	setHeaderFields  tarHeaderSetter
 }
 
 func NewWriter(archiveBaseDirName string, sink io.WriteCloser,
-	compressionLevel int) (Writer, error) {
+	opts ...WriterOption) (Writer, error) {
 	if sink == nil {
 		return nil, fmt.Errorf("nil sink")
 	}
-	gzipStream, err := gzip.NewWriterLevel(sink, compressionLevel)
+
+	cfg := makeWriterCfg(archiveBaseDirName, opts...)
+	gzipStream, err := gzip.NewWriterLevel(sink, cfg.compressionLevel)
 	if err != nil {
 		return nil, err
 	}
 	tarStream := tar.NewWriter(gzipStream)
 
 	return &tarball{
-		baseDirName:      archiveBaseDirName,
 		contentStream:    tarStream,
 		compressedStream: gzipStream,
 		sink:             sink,
+		setHeaderFields:  cfg.setHeaderFields,
 	}, nil
 }
 
@@ -85,10 +86,9 @@ func (t *tarball) Close() {
 }
 
 func (t *tarball) writeHeader(archivePath string, hdr *tar.Header) error {
-	hdr.Name = path.Join(t.baseDirName, archivePath)
-	hdr.Typeflag = tar.TypeReg
-	hdr.Format = tar.FormatPAX
-
+	if err := t.setHeaderFields(archivePath, hdr); err != nil {
+		return err
+	}
 	return t.contentStream.WriteHeader(hdr)
 }
 

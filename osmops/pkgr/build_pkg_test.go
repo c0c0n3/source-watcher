@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fluxcd/source-watcher/osmops/util/file"
 	"github.com/fluxcd/source-watcher/osmops/util/tgz"
@@ -35,7 +36,7 @@ var wantOpenLdapNsPaths = []string{
 
 func TestPackOpenLdapNs(t *testing.T) {
 	wantName := "openldap_ns"
-	wantHash := "fa87cba1f1db5e2140aa5a564534cadd"
+	wantHash := "cae4506d23753ee95f21faf8c6f97eaa"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapNsChecksumContent,
 		wantOpenLdapNsPaths)
 }
@@ -50,7 +51,7 @@ var wantOpenLdapKnfPaths = []string{
 
 func TestPackOpenLdapKnf(t *testing.T) {
 	wantName := "openldap_knf"
-	wantHash := "a83fd6396045acb8aa3013c4770a5a35"
+	wantHash := "95389ba9b38e9a76b66789217a178e75"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapKnfChecksumContent,
 		wantOpenLdapKnfPaths)
 }
@@ -69,7 +70,7 @@ var wantOpenLdapNestedPaths = []string{
 
 func TestPackOpenLdapNested(t *testing.T) {
 	wantName := "openldap_nested"
-	wantHash := "3220675e2124767a7a11f32a37340cb8"
+	wantHash := "5c2c2e459d0997fbef089499a7976812"
 	verifyPackage(t, wantName, wantHash, wantOpenLdapNestedChecksumContent,
 		wantOpenLdapNestedPaths)
 }
@@ -77,7 +78,8 @@ func TestPackOpenLdapNested(t *testing.T) {
 func verifyPackage(t *testing.T, wantName, wantHash, wantChecksum string,
 	wantPaths []string) {
 	source := findTestDataDir(wantName)
-	pkg, err := Pack(source)
+	epochStart := time.Unix(0, 0)                             // (*) see NOTE
+	pkg, err := doPack(source, tgz.WithEntryTime(epochStart)) // (*) see NOTE
 	if err != nil {
 		t.Fatalf("want: no error; got: %v", err)
 	}
@@ -106,6 +108,14 @@ func verifyPackage(t *testing.T, wantName, wantHash, wantChecksum string,
 		t.Errorf("want paths: %v; got: %v", wantPaths, gotPaths)
 	}
 }
+
+// NOTE. Reproducible package hashes.
+// Even if the files that make up the package are always the same, their
+// mod/change/access time can be different at different times---think of
+// e.g. a fresh checkout, merging a branch, opening one of the files, etc.
+// The tar entry tgz creates for each file includes the mod/change/access
+// time. So to make our test reproducible we've got to make sure we always
+// get the same hash, which is why we set those times to the epoch's start.
 
 func pathsAndChecksumFile(t *testing.T, data io.ReadCloser) ([]string, string) {
 	reader, err := tgz.NewReader(data)
