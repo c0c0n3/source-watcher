@@ -178,7 +178,7 @@ func (h *pkgHandler) put() (*http.Response, error) {
 // the tarball. As it turns out, OSM client does something different. It tries
 // finding a YAML file in the package dir, blindly assumes it's a VNFD or NSD
 // and PUTs it in OSM. What if there are other files in the package? Well,
-// I've got no idea what OSM client does that, but I've changed put's impl
+// I've got no idea why OSM client does that, but I've changed put's impl
 // to be in line with OSM client's.
 // OSM client's update methods:
 // - https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/vnfd.py

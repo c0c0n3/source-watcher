@@ -142,15 +142,34 @@ order.
 
 #### Processing a package tree
 So if there's an OSM package tree directory (`osm-pkgs`), OSM Ops
-will create or update any OSM packages found in there. (OSM Ops does
-nothing if there's no `osm-pkgs` directory or it has no sub-directories.)
+will create or update any OSM packages found in there. To figure
+out whether to create or update a package, OSM Ops queries the NBI
+upfront to see what packages are there already. If a package source
+is in `osm-pkgs` but not in OSM, then OSM Ops creates the package
+in OSM from the `osm-pkgs` source, otherwise it's an update. OSM Ops
+will skip processing packages if there's no `osm-pkgs` directory or
+it has no sub-directories.
 
 OSM Ops blindly assumes that any sub-directory `p` of the OSM package
-tree root contains the source files of an OSM package. It reads `p`'s
-contents to create a gzipped tar archive in the OSM format (including
-creating the `checksums.txt` file) and then streams it to OSM NBI to
-create or update the package in OSM. (If the package doesn't exist,
-it'll be created, otherwise it gets updated.)
+tree root contains the source files of an OSM package. If `p` has
+to be created, OSM Ops reads `p`'s contents to make a gzipped tar
+archive in the OSM format (including assembling the `checksums.txt`
+file) and then streams it to OSM NBI to create the package in OSM.
+On the other hand, if `p` is to be updated, OSM Ops tries locating
+the YAML file containing `p`'s VNFD or NSD definition, then uploads
+that YAML to OSM.
+
+**NOTE. Package update.**
+It's kinda weird the way it works, but most likely I'm missing something.
+In fact, our [initial implementation][pr.1] actually uploaded a tarball
+to OSM not only for create operations but also for updates. As it turns
+out, OSM client does something different when it comes to updating a
+package. It tries finding a YAML file in the package dir, blindly assumes
+it's a VNFD or NSD and PUTs it in OSM. What if there are other files
+in the package? Well, I've got no idea why OSM client does that, but
+I've changed our update implementation to be in line with OSM client's.
+Have a look at OSM client's [VNFD][osm-client.vnfd] and [NSD][osm-client.nsd]
+update implementation.
 
 
 ### How it could work
@@ -164,3 +183,10 @@ approach would be to:
 * extract a DAG `d[k]` for each graph component `g[k]`;
 * topologically sort `d[k]` to get a sequence of nodes `s[k]`;
 * process `s[k]` sequences in parallel.
+
+
+
+
+[osm-client.nsd]: https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/nsd.py
+[osm-client.vnfd]: https://osm.etsi.org/gitlab/osm/osmclient/-/blob/master/osmclient/sol005/vnfd.py
+[pr.1]: https://github.com/c0c0n3/source-watcher/pull/1
