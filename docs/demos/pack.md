@@ -60,14 +60,24 @@ contains a [deployment directory][test.0.0.7.deploy] with
   to run an OpenLDAP KNF instantiated from NSD, VNFD and KDU descriptors
   found in the above packages.
 
+Read the [Local clusters][demo.local] demo's section about GitOps
+for an explanation of the OSM Ops YAML file. The way OSM Ops handles
+packages is a bit more involved, you can [read here about it][docs.pkgs],
+but for the purpose of this demo all you need to know is that OSM
+Ops can create or update OSM packages from source directories you
+keep in your GitOps repo. Each source directory contains the files
+you'd normally use to make an OSM package tarball, except for the
+`checksums.txt` file which OSM Ops generates for you when making
+the tarball.
+
 On processing the repo at tag `test.0.0.7`, OSM Ops will create the
 OpenLDAP KNF and NS packages in OSM, then make OSM instantiate the
 OpenLDAP KNF using the data in the packages just created in OSM.
 
 After that, we'll simulate a commit to the repo by switching over
 to tag `test.0.0.8`. The only changes between tag `test.0.0.7` and
-`test.0.0.8` are updated version numbers, from `1.0` to `1.1`, for
-the source packages as shown in [this diff][tag-diff]. OSM Ops will
+`test.0.0.8` are updated version numbers for the source packages,
+from `1.0` to `1.1`, as shown in [this diff][tag-diff]. OSM Ops will
 pick up the changes and update both packages in OSM.
 
 
@@ -119,10 +129,10 @@ down earlier (e.g. http://192.168.64.19/) and log in with the OSM
 admin user—username: `admin`, password: `admin`. You should be able
 to see that OSM now has both an OpenLDAP KNF and NS package and is
 busy creating a new NS instance called `ldap`, similar to what you
-see on the screenshot [Local clusters][demo.local] demo. And as in
-the [Local clusters][demo.local] demo, if you grab the OSM Ops logs,
-you should see what OSM Ops did. The log file should contain entries
-similar to the ones below
+see on the screenshot in the [Local clusters][demo.local] demo. And
+as in the [Local clusters][demo.local] demo, if you grab the OSM Ops
+logs, you should see what OSM Ops did. The log file should contain
+entries similar to the ones below
 
 ```log
 2022-06-21T18:34:45.368Z	INFO	controller.gitrepository	New revision detected	{"reconciler group": "source.toolkit.fluxcd.io", "reconciler kind": "GitRepository", "name": "test", "namespace": "flux-system", "revision": "test.0.0.7/d3a8cbf812447c05cf44814db40f6c6da86ab49f"}
@@ -190,6 +200,7 @@ $ multipass purge
 
 
 [demo.local]: ./local-clusters.md
+[docs.pkgs]: ../osm-pkgs.md
 [tag-diff]: https://github.com/c0c0n3/source-watcher/compare/test.0.0.7...c0c0n3:test.0.0.8
 [test.0.0.7]: https://github.com/c0c0n3/source-watcher/tree/test.0.0.7
 [test.0.0.7.deploy]: https://github.com/c0c0n3/source-watcher/tree/test.0.0.7/_deployment_
