@@ -25,6 +25,8 @@ deployment setting. So here are the demos:
   debug OSM Ops to see what it's actually up to.
 * [Malaga][demo.malaga]. Demo given at the Affordable5G official review
   in November 2021 with a fully-fledged deployment in Malaga.
+* [Packaging][demo.pack]. Build on the local clusters demo to showcase
+  how OSM Ops can also create and update OSM packages from sources.
 
 
 
@@ -33,3 +35,4 @@ deployment setting. So here are the demos:
 [demo.dev]: ./dev-mode.md
 [demo.local]: ./local-clusters.md
 [demo.malaga]: ./malaga.md
+[demo.pack]: ./pack.md
