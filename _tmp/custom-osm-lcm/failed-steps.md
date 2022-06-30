@@ -103,11 +103,55 @@ dist_ro_sdn_odl_of installdeps: -r/build/requirements.txt, -r/build/requirements
 ```
 
 Notice how this time the VMWare deps step succeeded while the build
-got stuck on another component.
+got stuck on another component. As a last ditch attempt I tried building
+just the RO component
+
+```console
+% devops/tools/local-build.sh --module RO stage-2
+```
+
+But the build got stuck again on another `installdeps` step
+
+```console
+...
+dist_ro_vim_vmware installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+...
+dist_ro_sdn_odl_of installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+...
+dist_ro_sdn_floodlight_of installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+```
+
+I ran it once more and it got stack on an `installdeps` step of a
+component that worked in all previous runs
+
+```console
+...
+dist_ro_vim_openvim installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+```
+
+Deadlock bug?
+
+
+### LCM build failures - part 3
+
+So there's no way we can build RO. All we can do is exclude it from
+the build and hope we can still build LCM
+
+```console
+% devops/tools/local-build.sh --module common,IM,N2VC,LCM,NBI stage-2
+```
+
+With this tweak the build succeeds and we can also go past the LCM
+URL failure in creating the Docker image
+
+```console
+% devops/tools/local-build.sh --module LCM stage-3
+```
+
+The command runs cleanly and tags `opensourcemano/lcm:devel`.
 
 
 
 
 [failed-osm-install]: ./osm-install/install.failed.log
-
 

@@ -63,6 +63,10 @@ Cloning repos
 % git clone https://osm.etsi.org/gerrit/osm/NBI
 ```
 
+Notice the RO and NBI repos weren't in the original instructions
+they gave us, but then their build command requires them. So we
+clone those two as well.
+
 Setting up OSM's git commit hook in each repo
 
 
@@ -93,11 +97,20 @@ Hit `Ctrl+c` to exit.
 First you've got to build the artifacts that make up the LCM image
 
 ```console
+% devops/tools/local-build.sh --module common,IM,N2VC,LCM,NBI stage-2
+```
+
+Notice the original build command they gave us included RO too:
+
+```console
 % devops/tools/local-build.sh --module common,IM,N2VC,RO,LCM,NBI stage-2
 ```
 
-Then build a Docker image from the above components. The image name has
-a `:devel` suffix.
+but it looks like trying to build RO is a lost cause. Details
+[over here][fails]. So we skip building RO for the moment.
+
+Then build a Docker image from the above components. The image name is
+`opensourcemano/lcm:devel`.
  
 ```console
 % devops/tools/local-build.sh --module LCM stage-3
@@ -111,8 +124,26 @@ built:
 
 ```console
 % kubectl -n osm patch deployment lcm --patch '{"spec": {"template": {"spec": {"containers": [{"name": "lcm", "image": "opensourcemano/lcm:devel"}]}}}}'
+deployment.apps/lcm patched
 ```
 
+And as a sanity check:
+
+```console
+% kubectl -n osm get deployment lcm -o yaml | grep 'image: open'
+        image: opensourcemano/lcm:devel
+
+% kubectl -n osm get pod | grep lcm
+lcm-7cf9644d9b-zthgf            1/1     Running   0              2m33s
+```
+
+### Grief down the line?
+
+Notice we didn't build RO earlier. While we manage to build and deploy
+LCM in the end, the LCM image might have some missing components, i.e.
+those the build process supposedly fetched from RO. So we've got to
+test the custom image thoroughly to make sure it works for our use
+case.
 
 
 ### From the horse's mouth
