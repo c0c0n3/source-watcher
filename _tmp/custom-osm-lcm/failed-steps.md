@@ -17,7 +17,7 @@ and the install procedure not being robust enough to cater for slow
 boxes?
 
 
-### LCM build failures
+### LCM build failures - part 1
 
 The command to build the LCM image artifacts took about 50 mins and
 I didn't get a clean build in the end:
@@ -57,6 +57,53 @@ Failed to build lcm
 ```
 
 Oh deary, deary. Maybe I shouldn't have gone ahead.
+
+
+### LCM build failures - part 2
+
+So it turns out the reason for this error message
+
+> Directory /home/ubuntu/workspace/RO does not exist
+
+is that the command
+
+```console
+% devops/tools/local-build.sh --module common,IM,N2VC,RO,LCM,NBI stage-2
+```
+
+tries to build an OSM component called RO. In fact there's an RO repo.
+Since the command also tries building NBI, we're going to clone and set
+up these two repos too:
+
+```console
+% git clone https://osm.etsi.org/gerrit/osm/RO
+% git clone https://osm.etsi.org/gerrit/osm/NBI
+% for r in IM LCM N2VC NBI RO common devops; do cp commit-msg $r/.git/hooks/; done
+```
+
+Now running again the build command got me past the directory error,
+but the build seems to get into an infinite loop when installing RO
+deps
+
+```console
+...
+dist_ro_vim_vmware installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+```
+
+it just sits there for half an hour seemingly making no progress.
+Could it be an issue with VMWare deps? Well, I killed the process
+and ran the command again. And again the process got stuck on installing
+deps
+
+```console
+...
+dist_ro_vim_vmware installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+...
+dist_ro_sdn_odl_of installdeps: -r/build/requirements.txt, -r/build/requirements-dist.txt
+```
+
+Notice how this time the VMWare deps step succeeded while the build
+got stuck on another component.
 
 
 

@@ -59,6 +59,8 @@ Cloning repos
 % git clone https://osm.etsi.org/gerrit/osm/devops
 % git clone https://osm.etsi.org/gerrit/osm/common
 % git clone https://osm.etsi.org/gerrit/osm/IM
+% git clone https://osm.etsi.org/gerrit/osm/RO
+% git clone https://osm.etsi.org/gerrit/osm/NBI
 ```
 
 Setting up OSM's git commit hook in each repo
@@ -67,7 +69,7 @@ Setting up OSM's git commit hook in each repo
 ```console
 % curl https://osm.etsi.org/gerrit/tools/hooks/commit-msg > commit-msg
 % chmod +x commit-msg
-% for r in IM LCM N2VC common devops; do cp commit-msg $r/.git/hooks/; done
+% for r in IM LCM N2VC NBI RO common devops; do cp commit-msg $r/.git/hooks/; done
 ```
 
 
