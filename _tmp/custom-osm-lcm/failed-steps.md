@@ -19,7 +19,28 @@ boxes?
 
 ### LCM build failures - part 1
 
-The command to build the LCM image artifacts took about 50 mins and
+If you bump into this lovely error about Docker permissions when
+building the LCM image artifacts
+
+```console
+% devops/tools/local-build.sh --module common,IM,N2VC,LCM,NBI stage-2
+Performing Stage 2
+Building common
+Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/build?buildargs=%7B%7D&cachefrom=%5B%5D&cgroupparent=&cpuperiod=0&cpuquota=0&cpusetcpus=&cpusetmems=&cpushares=0&dockerfile=Dockerfile&labels=%7B%7D&memory=0&memswap=0&networkmode=default&rm=1&shmsize=0&t=common-stage2&target=&ulimits=null&version=1": dial unix /var/run/docker.sock: connect: permission denied
+docker: Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/create": dial unix /var/run/docker.sock: connect: permission denied.
+See 'docker run --help'.
+Failed to build common
+```
+
+It could be because you've got to log out the VM after installing
+OSM. To be on the safe side, it's actually best to shut down and
+then restart the VM after installation.
+
+
+### LCM build failures - part 2
+
+So going past the first hurdle was relatively easy. But then the
+command to build the LCM image artifacts took about 50 mins and
 I didn't get a clean build in the end:
 
 ```console
@@ -59,7 +80,7 @@ Failed to build lcm
 Oh deary, deary. Maybe I shouldn't have gone ahead.
 
 
-### LCM build failures - part 2
+### LCM build failures - part 3
 
 So it turns out the reason for this error message
 
@@ -132,7 +153,7 @@ dist_ro_vim_openvim installdeps: -r/build/requirements.txt, -r/build/requirement
 Deadlock bug?
 
 
-### LCM build failures - part 3
+### LCM build failures - part 4
 
 So there's no way we can build RO. All we can do is exclude it from
 the build and hope we can still build LCM
@@ -154,4 +175,3 @@ The command runs cleanly and tags `opensourcemano/lcm:devel`.
 
 
 [failed-osm-install]: ./osm-install/install.failed.log
-

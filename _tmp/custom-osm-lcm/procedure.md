@@ -30,6 +30,10 @@ $ multipass shell osm11
 % ./install_osm.sh 2>&1 | tee install.log
 ```
 
+Make sure to check you've ended up with a functional OSM cluster before
+moving on---this includes *waiting for all the OSM pods to be up and
+running*. Then shutdown and restart your freshly minted OSM VM.
+
 See:
 
 - https://osm.etsi.org/docs/user-guide/latest/03-installing-osm.html
@@ -111,7 +115,7 @@ but it looks like trying to build RO is a lost cause. Details
 
 Then build a Docker image from the above components. The image name is
 `opensourcemano/lcm:devel`.
- 
+
 ```console
 % devops/tools/local-build.sh --module LCM stage-3
 ```
@@ -168,25 +172,21 @@ git clone "https://osm.etsi.org/gerrit/osm/common" && (cd "common" && curl https
 
 git clone "https://osm.etsi.org/gerrit/osm/IM" && (cd "IM" && curl https://osm.etsi.org/gerrit/tools/hooks/commit-msg > .git/hooks/commit-msg ; chmod +x .git/hooks/commit-msg)
 
- 
 
 2. Install HTTP server:
 
 devops/tools/local-build.sh --install-qhttpd
 
- 
 
 3. Build artifacts:
 
 devops/tools/local-build.sh --module common,IM,N2VC,RO,LCM,NBI stage-2
 
- 
 
 4. Build image (this generates a “devel” tagged image using previous artifacts):
 
 devops/tools/local-build.sh --module LCM stage-3
 
- 
 
 5. Patch deployment to use “devel” image:
 
