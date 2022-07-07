@@ -141,6 +141,95 @@ And as a sanity check:
 lcm-7cf9644d9b-zthgf            1/1     Running   0              2m33s
 ```
 
+
+### NS instance test
+
+Let's make sure the custom LCM image plays well with the rest of
+OSM services in the cluster. We're going to add some repos, upload
+packages and then create an NS instance using those packages.
+
+But first, let's configure the KNF infra for an isolated Kubernetes
+cluster
+
+```console
+% osm vim-create --name mylocation1 --user u --password p --tenant p \
+>     --account_type dummy --auth_url http://localhost/dummy
+c8779fff-ba39-4cbc-9259-48d02e374dc2
+
+% osm k8scluster-add cluster --creds .kube/config --vim mylocation1 \
+>     --k8s-nets '{k8s_net1: null}' --version "v1.15.12" \
+>     --description="Isolated K8s cluster at mylocation1"
+f68c5f89-901a-4bb7-bfdd-1c8a2a04bf10
+```
+
+Adding K8s repos
+
+```console
+% osm repo-add --type helm-chart --description "Bitnami repo" bitnami https://charts.bitnami.com/bitnami
+fe28ae36-4400-4821-bd6a-442cbb379568
+
+% osm repo-add --type helm-chart --description "Cetic repo" cetic https://cetic.github.io/helm-charts
+26a3b21b-6e73-4029-9a1c-5393777e67ea
+
+% osm repo-add --type helm-chart --description "Elastic repo" elastic https://helm.elastic.co
+19f21297-6988-46b9-933b-1479c0516bdb
+```
+
+Now upload the OSM OpenLDAP packages we're going to use to create NS
+instances. To do that, open a terminal in this repo's root dir, then:
+
+```console
+$ cd _tmp/osm-pkgs
+$ multipass mount ./ osm11:/mnt/osm-pkgs
+$ multipass shell osm11
+% cd /mnt/osm-pkgs
+
+% osm nfpkg-create openldap_knf.tar.gz
+3540cf89-c764-425d-b771-62c9dd155ab8
+
+% osm nspkg-create openldap_ns.tar.gz
+1c803c06-33d8-40ac-96f7-7d63a647a846
+```
+
+Give OSM a couple of minutes to process all that stuff. Then log into
+the OSM Web UI. You should be able to see: VIM account, K8s cluster,
+the three repos we added as well as the NS and VNF packages.
+
+After checking everything is hunky-dory, go back to the OSM VM shell.
+Time to create that LDAP NS instance we've all been waiting for.
+
+```console
+% osm ns-create --ns_name ldap --nsd_name openldap_ns --vim_account mylocation1
+5d5d5028-0e4a-4a76-906a-cd4a3ad1d210
+```
+
+Again wait a few minutes. Eventually the OSM Web UI should reflect
+the OpenLDAP NS instance. If you go back to the shell, you can check
+there's a new namespace in the K8s cluster with a brand new OpenLDAP
+pod in it:
+
+```console
+%  kubectl get ns
+NAME                                   STATUS   AGE
+94c3f4fb-304f-4290-ab95-0319d84b48b6   Active   2m12s
+...
+osm                                    Active   45h
+
+% kubectl -n 94c3f4fb-304f-4290-ab95-0319d84b48b6 get pod
+NAME                                                READY   STATUS    RESTARTS   AGE
+stable-openldap-1-2-7-0084381388-6f658b9545-q7k5m   1/1     Running   0          2m15s
+
+% kubectl -n 94c3f4fb-304f-4290-ab95-0319d84b48b6 logs stable-openldap-1-2-7-0084381388-6f658b9545-q7k5m
+...
+Start OpenLDAP...
+...
+First start is done...
+...
+```
+
+Happy days?
+
+
 ### Grief down the line?
 
 Notice we didn't build RO earlier. While we manage to build and deploy
